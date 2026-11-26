@@ -1,0 +1,11 @@
+{
+  "formatVersion": 1,
+  "service": "auth-service",
+  "apiMajor": 1,
+  "readerVersion": 2,
+  "minimumSchema": 9,
+  "migrationVersion": 10,
+  "readerFloorAfterMigration": 2,
+  "cipherFloorAfterMigration": "BK1",
+  "cipherReaders": ["BK1", "legacy-v1"]
+}

@@ -1,0 +1,2 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({testDir:'./tests/navigation',outputDir:'.redesign-artifacts/appnav-20261113/results',workers:2,use:{baseURL:'http://127.0.0.1:4186',trace:'off'},projects:[320,375,414,600,768,1440].flatMap(width=>(['light','dark'] as const).map(colorScheme=>({name:`${width}-${colorScheme}`,use:{viewport:{width,height:900},colorScheme}})))});

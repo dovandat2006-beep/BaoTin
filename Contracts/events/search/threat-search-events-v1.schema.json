@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/search/threat-search-events-v1",
+  "title": "Threat domain events for public Search projection v1",
+  "description": "Separate baotin.threat.search.events.v1 stream. Existing reputation streams and legacy URL Search remain compatible. PRIVATE withdraws public data; absence of publicSearch never publishes private fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "aggregateType",
+    "aggregateId",
+    "correlationId",
+    "causationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "enum": [
+        "threat.created",
+        "threat.updated"
+      ]
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "const": "threat-service"
+    },
+    "aggregateType": {
+      "const": "ThreatTarget"
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "traceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "threatTargetId",
+        "targetType"
+      ],
+      "properties": {
+        "threatTargetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "publicSearch": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "visibility"
+          ],
+          "properties": {
+            "visibility": {
+              "enum": [
+                "PUBLIC",
+                "PRIVATE"
+              ]
+            },
+            "documentType": {
+              "enum": [
+                "URL",
+                "PHONE",
+                "BANK_ACCOUNT",
+                "EMAIL",
+                "CAMPAIGN",
+                "OTHER"
+              ]
+            },
+            "referenceId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253
+            },
+            "displayValue": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253
+            },
+            "status": {
+              "enum": [
+                "ACTIVE",
+                "REMOVED"
+              ]
+            },
+            "lookupHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "metadata": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "campaignId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "bankCode": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20,
+                  "pattern": "^[A-Z]{1,20}$"
+                },
+                "referenceType": {
+                  "enum": [
+                    "URL",
+                    "PHONE",
+                    "BANK_ACCOUNT",
+                    "EMAIL",
+                    "CAMPAIGN",
+                    "OTHER",
+                    "MESSAGE_TEMPLATE"
+                  ]
+                },
+                "contentWarning": {
+                  "enum": [
+                    "SUSPICIOUS",
+                    "UNKNOWN",
+                    "BENIGN"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10000,
+              "description": "Automatically masked message wording only; sensitive values become ***."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "visibility": {
+                    "const": "PUBLIC"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "documentType",
+                  "referenceId",
+                  "status"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "visibility": {
+                    "const": "PUBLIC"
+                  },
+                  "status": {
+                    "const": "ACTIVE"
+                  }
+                },
+                "required": [
+                  "visibility",
+                  "status"
+                ]
+              },
+              "then": {
+                "required": [
+                  "title",
+                  "displayValue",
+                  "metadata"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "visibility": {
+                    "const": "PUBLIC"
+                  },
+                  "status": {
+                    "const": "ACTIVE"
+                  },
+                  "documentType": {
+                    "enum": [
+                      "PHONE",
+                      "BANK_ACCOUNT",
+                      "EMAIL"
+                    ]
+                  }
+                },
+                "required": [
+                  "visibility",
+                  "status",
+                  "documentType"
+                ]
+              },
+              "then": {
+                "required": [
+                  "lookupHash"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "documentType": {
+                    "const": "CAMPAIGN"
+                  }
+                },
+                "required": [
+                  "documentType"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "title": {
+                    "maxLength": 200
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "documentType": {
+                    "const": "PHONE"
+                  }
+                },
+                "required": [
+                  "documentType"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "title": {
+                    "const": "Điện thoại"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "documentType": {
+                    "const": "BANK_ACCOUNT"
+                  }
+                },
+                "required": [
+                  "documentType"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "title": {
+                    "const": "Tài khoản ngân hàng"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "documentType": {
+                    "const": "EMAIL"
+                  }
+                },
+                "required": [
+                  "documentType"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "title": {
+                    "const": "Email"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "targetType": {
+          "enum": [
+            "URL",
+            "PHONE",
+            "BANK_ACCOUNT",
+            "EMAIL",
+            "OTHER",
+            "MESSAGE_TEMPLATE"
+          ]
+        }
+      }
+    }
+  }
+}

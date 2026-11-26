@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "repositories": {
+    "Model-Inference-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Analytics-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Campaign-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Reputation-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Search-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Infra": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Frontend": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Auth-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Notification-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Report-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "Threat-Service": "REVIEWED_40_HEX_COMMIT_SHA",
+    "API-Gateway": "REVIEWED_40_HEX_COMMIT_SHA"
+  }
+}

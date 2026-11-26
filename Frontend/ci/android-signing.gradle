@@ -1,0 +1,31 @@
+// Invoked only by the explicit local release build; no secrets in Gradle argv/logs.
+gradle.beforeProject { project ->
+    project.plugins.withId('com.facebook.react') {
+        project.extensions.getByName('react').extraPackagerArgs.addAll(['--max-workers', '2'])
+    }
+    project.plugins.withId('com.android.application') {
+        project.extensions.getByName('androidComponents').finalizeDsl { android ->
+            // Ninja on Windows still encounters deep RN codegen object paths even
+            // with a short checkout. Hash long object paths instead of relying on
+            // an OS-wide long-path registry change or suppressing native builds.
+            android.defaultConfig.externalNativeBuild.cmake.arguments.add('-DCMAKE_OBJECT_PATH_MAX=240')
+            def propertiesPath = System.getenv('BAOTIN_ANDROID_SIGNING_PROPERTIES')
+            if (!propertiesPath) throw new GradleException('External Android signing properties required')
+            def propertiesFile = new File(propertiesPath)
+            if (!propertiesFile.isAbsolute() || !propertiesFile.isFile()) throw new GradleException('Invalid Android signing properties file')
+            def credentials = new Properties()
+            propertiesFile.withInputStream { credentials.load(it) }
+            ['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].each { key ->
+                if (!credentials.getProperty(key)) throw new GradleException('Incomplete external Android signing properties')
+            }
+            def keyFile = new File(credentials.getProperty('storeFile'))
+            if (!keyFile.isAbsolute() || !keyFile.isFile()) throw new GradleException('External Android keystore missing')
+            def signing = android.signingConfigs.maybeCreate('baotinRelease')
+            signing.storeFile = keyFile
+            signing.storePassword = credentials.getProperty('storePassword')
+            signing.keyAlias = credentials.getProperty('keyAlias')
+            signing.keyPassword = credentials.getProperty('keyPassword')
+            android.buildTypes.getByName('release').signingConfig = signing
+        }
+    }
+}

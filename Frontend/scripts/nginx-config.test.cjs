@@ -1,0 +1,2 @@
+const{test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+test('regex locations containing quantifier braces are quoted for the nginx parser',()=>{const text=fs.readFileSync(path.join(__dirname,'../nginx.conf'),'utf8');for(const line of text.split('\n').filter(line=>/^\s*location\s+~/.test(line)&&line.includes('{36}')))assert.match(line,/location\s+~\s+"[^"]+"\s+\{/);assert.match(text,/Content-Disposition attachment/);assert.match(text,/location = \/downloads\/android\.json/);});

@@ -1,0 +1,126 @@
+# =============================================================================
+#  BaoTin — hạ tầng phụ trợ cho Jenkins CI/CD
+#
+#  QUAN TRỌNG
+#    File này KHÔNG định nghĩa container `jenkins-blueocean`. Đó là container
+#    do bạn tự dựng và đã cấu hình ổn định (image `myjenkins:latest`, port
+#    8080, volume `jenkins-data`) — file này cố ý không quản lý nó để
+#    `docker compose up` không bao giờ tạo lại hay ghi đè cấu hình của bạn.
+#
+#  File này chỉ định nghĩa phần còn lại của stack:
+#    1. docker (dind)        — Docker daemon cho Jenkins build/push image
+#    2. jenkins-agent-jdk21  — build agent TUỲ CHỌN (profile `agent`)
+#
+#  Hiện tại KHÔNG cần agent: controller đã có JDK 21 + Docker CLI + buildx
+#  nên pipeline chạy trực tiếp trên controller (label `baotin-docker` do
+#  script init/baotin-ci.groovy gắn vào).
+#
+#  ---------------------------------------------------------------------------
+#  Khi nào dùng file này?
+#
+#    • Dựng lại dind trên máy mới:
+#        docker network create jenkins            # nếu chưa có
+#        docker compose up -d docker
+#
+#    • Bật thêm build agent (không bắt buộc):
+#        docker compose --profile agent up -d
+#
+#    • Kiểm tra cấu hình không chạy gì:
+#        docker compose config
+#
+#  LƯU Ý: `docker compose up -d docker` sẽ TẠO LẠI container `docker` đang
+#  chạy. Container mới khớp cùng cấu hình, nhưng image cache trong dind sẽ
+#  mất. Image trên ghcr.io không bị ảnh hưởng.
+# =============================================================================
+
+name: baotin-ci
+
+services:
+  # ===========================================================================
+  #  Docker daemon cho CI — Docker-in-Docker
+  #
+  #  Jenkins kết nối tới đây qua `DOCKER_HOST=tcp://docker:2376` (TLS bật).
+  #  Chỉ container này cần `privileged`; Jenkins và agent không cần.
+  # ===========================================================================
+  docker:
+    image: docker:27-dind
+    container_name: docker
+    restart: unless-stopped
+    privileged: true
+    environment:
+      # Sinh CA + server/client cert vào /certs (layout mới của Docker 27):
+      #   /certs/ca, /certs/server, /certs/client
+      # Jenkins mount /certs/client read-only và bật DOCKER_TLS_VERIFY=1.
+      DOCKER_TLS_CERTDIR: /certs
+    # KHÔNG override `command`: entrypoint của image dind tự thêm
+    # --tlsverify --tlscacert/... khi thấy DOCKER_TLS_CERTDIR được set.
+    # Tự truyền --host mà thiếu --tlsverify sẽ TẮT TLS và làm Jenkins
+    # (DOCKER_TLS_VERIFY=1) không kết nối được.
+    healthcheck:
+      test: ["CMD-SHELL", "docker info >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      # Chứng chỉ TLS — dùng chung với container Jenkins (mount /certs/client)
+      - jenkins-docker-certs:/certs
+      # Image + layer đã build, giữ lại qua các lần restart
+      - docker-data:/var/lib/docker
+    networks:
+      - jenkins
+
+  # ===========================================================================
+  #  Build agent — TUỲ CHỌN, không cần cho cấu hình hiện tại
+  #
+  #  Chỉ dùng khi muốn tách build khỏi controller (ví dụ nhiều pipeline chạy
+  #  song song). Bật bằng:  docker compose --profile agent up -d
+  #
+  #  Cần tạo node trong Jenkins (Manage Nodes → New Node → Permanent Agent,
+  #  Launch method = "Launch agent by connecting it to the controller") rồi
+  #  điền JENKINS_AGENT_SECRET lấy từ trang cấu hình node.
+  #
+  #  Image `jenkins/inbound-agent:latest` chỉ có JDK 17. Nếu dùng agent, cần
+  #  JDK 21 (Gradle toolchain tự tải qua foojay resolver, hoặc build image
+  #  riêng có JDK 21).
+  # ===========================================================================
+  jenkins-agent-jdk21:
+    profiles: ["agent"]
+    image: jenkins/inbound-agent:latest
+    container_name: jenkins-agent-jdk21
+    restart: unless-stopped
+    depends_on:
+      docker:
+        condition: service_healthy
+    environment:
+      JENKINS_URL: ${JENKINS_URL:-http://jenkins-blueocean:8080}
+      JENKINS_AGENT_NAME: ${JENKINS_AGENT_NAME:-jenkins-agent-jdk21}
+      JENKINS_SECRET: ${JENKINS_AGENT_SECRET:?Cần set JENKINS_AGENT_SECRET trong .env}
+      JENKINS_AGENT_WORKDIR: /home/jenkins/agent
+      # Agent cũng trỏ tới dind để build image
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_CERT_PATH: /certs/client
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - jenkins-docker-certs:/certs/client:ro
+      # Cache Gradle dùng chung giữa các build
+      - gradle-cache:/home/jenkins/.gradle
+    networks:
+      - jenkins
+
+volumes:
+  # Khai báo tường minh tên volume để compose dùng lại đúng volume đang có
+  # (được tạo bởi `docker run` gốc), không tạo volume mới.
+  jenkins-docker-certs:
+    name: jenkins-docker-certs
+  docker-data:
+    name: baotin-docker-data
+  gradle-cache:
+    name: baotin-gradle-cache
+
+networks:
+  # `jenkins` là network có sẵn mà container jenkins-blueocean đang dùng.
+  # external: true để compose không cố tạo/xoá nó.
+  jenkins:
+    external: true

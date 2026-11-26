@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "namespace": "baotin",
+  "namespaceUid": "REPLACE_WITH_ACTUAL_NAMESPACE_UID",
+  "context": "REPLACE_WITH_EXPLICIT_CONTEXT",
+  "apiServer": "https://REPLACE_WITH_CLUSTER_ENDPOINT:6443",
+  "publicOrigin": "https://baotin.rimiprod.me",
+  "modelClaim": "baotin-models",
+  "modelPaths": {
+    "text": "text-1.0.1",
+    "url": "url-1.0.1"
+  },
+  "imagePullSecret": "baotin-registry",
+  "authKeysSecret": "baotin-auth-keys-v1",
+  "secretRefs": {
+    "api-gateway": "api-gateway-runtime-v1",
+    "auth-service": "auth-service-runtime-v1",
+    "threat-service": "threat-service-runtime-v1",
+    "report-service": "report-service-runtime-v1",
+    "reputation-service": "reputation-service-runtime-v1",
+    "model-inference-service": "model-inference-service-runtime-v1",
+    "notification-service": "notification-service-runtime-v1",
+    "search-service": "search-service-runtime-v1",
+    "analytics-service": "analytics-service-runtime-v1"
+  },
+  "dependencies": {
+    "postgres": {
+      "host": "10.20.30.1",
+      "port": 5432,
+      "cidrs": [
+        "10.20.30.1/32"
+      ]
+    },
+    "redis": {
+      "host": "10.20.30.2",
+      "port": 6379,
+      "cidrs": [
+        "10.20.30.2/32"
+      ]
+    },
+    "kafka": {
+      "host": "10.20.30.3",
+      "port": 9092,
+      "cidrs": [
+        "10.20.30.3/32"
+      ]
+    },
+    "minio": {
+      "host": "10.20.30.4",
+      "port": 9000,
+      "cidrs": [
+        "10.20.30.4/32"
+      ]
+    }
+  },
+  "edgePeers": [],
+  "providerEgress": {
+    "auth-service": [
+      {
+        "cidr": "0.0.0.0/0",
+        "port": 443
+      }
+    ],
+    "notification-service": [
+      {
+        "cidr": "0.0.0.0/0",
+        "port": 443
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/notification/notification-events-v1",
+  "title": "BảoTin notification event envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "eventVersion", "occurredAt", "producer", "aggregateType", "aggregateId", "correlationId", "causationId", "payload"],
+  "properties": {
+    "eventId": {"type": "string", "format": "uuid"},
+    "eventType": {"const": "notification.sent"},
+    "eventVersion": {"const": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "producer": {"const": "notification-service"},
+    "aggregateType": {"const": "Notification"},
+    "aggregateId": {"type": "string", "format": "uuid"},
+    "correlationId": {"type": "string", "format": "uuid"},
+    "causationId": {"type": ["string", "null"], "format": "uuid"},
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notificationId", "userId", "type", "channels"],
+      "properties": {
+        "notificationId": {"type": "string", "format": "uuid"},
+        "userId": {"type": "string", "format": "uuid"},
+        "type": {"type": "string", "maxLength": 60},
+        "channels": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inApp", "push"],
+          "properties": {
+            "inApp": {"type": "boolean"},
+            "push": {"type": "boolean"}
+          }
+        }
+      }
+    }
+  }
+}

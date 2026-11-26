@@ -1,0 +1,156 @@
+name: Frontend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Test audit exception policy
+        run: node --test scripts/audit-gate.test.mjs scripts/expo-zod-compat.test.cjs scripts/release-api-config.test.cjs scripts/sonar-analysis.test.cjs
+      - name: Dependency audit (high and critical)
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > audit-report.json
+          audit_status=$?
+          set -e
+          if [ "$audit_status" -gt 1 ]; then
+            cat audit-report.json
+            exit "$audit_status"
+          fi
+          node scripts/audit-gate.mjs audit-report.json
+      - name: Upload raw audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-${{ github.sha }}
+          path: audit-report.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Expo project health
+        run: |
+          node --test scripts/expo-sdk-alignment.test.cjs
+          EXPO_NO_CACHE=1 npx expo-doctor@1.21.5
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Tooling and release-contract regression guards
+        run: npm run test:tooling
+
+      - name: Admin navigation regression guard
+        run: node --test scripts/admin-surface.test.cjs
+
+      - name: Android release configuration tests
+        run: node --test scripts/android-build.test.cjs scripts/live-mode.test.cjs
+
+      - name: Android package verifier unit tests
+        run: python -m unittest discover -s ci -p 'test_verify_android_package.py'
+
+      - name: Export Android Hermes bundle
+        env:
+          EXPO_PUBLIC_API_URL: https://baotin.rimiprod.me
+        run: npm run build:android:bundle
+
+      - name: Export iOS Hermes bundle
+        env:
+          EXPO_PUBLIC_API_URL: https://baotin.rimiprod.me
+        run: npm run build:ios:bundle
+
+      - name: Build web
+        env:
+          EXPO_PUBLIC_API_URL: ""
+          EXPO_PUBLIC_DEMO_MODE: "1"
+        run: npm run build:web
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+      - name: Build report API fixture web
+        env:
+          EXPO_PUBLIC_API_URL: http://127.0.0.1:4184
+          EXPO_PUBLIC_DEMO_MODE: "0"
+        run: npx expo export --platform web --clear --output-dir dist-api
+
+      - name: Report API browser fixtures
+        run: npx playwright test -c playwright.reports.config.ts
+
+      - name: Build live-mode web (no demo default)
+        env:
+          EXPO_PUBLIC_API_URL: https://baotin.rimiprod.me
+          EXPO_PUBLIC_DEMO_MODE: "0"
+        run: npx expo export --platform web --output-dir dist-web-live
+
+      - name: Live-mode public Search and no-demo browser checks
+        env:
+          BAOTIN_TEST_LIVE_MODE: "1"
+        run: npx playwright test tests/e2e/live-mode.spec.ts tests/e2e/search.spec.ts
+
+      - name: Admin visibility and revocation UI fixtures
+        run: npx playwright test -c playwright.admin.config.ts
+
+      - name: Account and OAuth transport UI fixtures
+        env:
+          BAOTIN_ACCOUNT_WEB_DIR: dist-web-live
+        run: npx playwright test -c playwright.account.config.ts
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bao-tin-web-${{ github.sha }}
+          path: dist-web-live/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.sha }}
+          path: |
+            playwright-report/
+            playwright-report-reports/
+          if-no-files-found: ignore
+          retention-days: 14

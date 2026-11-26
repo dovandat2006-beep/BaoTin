@@ -1,0 +1,8 @@
+{
+  "modelName": "canine-url",
+  "modelVersion": "TEST-FIXTURE",
+  "tokenizer": "canine",
+  "referenceRuntime": "1.19.2",
+  "referenceTransformers": "4.57.1",
+  "source": "vietluccuu/AI/url"
+}

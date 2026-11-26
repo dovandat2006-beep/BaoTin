@@ -1,0 +1,29 @@
+
+# Local configuration, credentials and private material
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local.json
+secrets/
+certs/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.token
+*.secret
+*.bin
+firebase*-service-account*.json
+google-services.json
+GoogleService-Info.plist
+# Runtime/build diagnostics
+*.log
+hs_err_pid*
+replay_pid*
+__pycache__/
+*.pyc
+.verification/
+.changes/

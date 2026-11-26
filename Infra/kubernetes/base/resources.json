@@ -1,0 +1,3043 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "api-gateway",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "api-gateway",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "api-gateway",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "api-gateway",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "api-gateway"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "api-gateway",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "api-gateway",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "api-gateway",
+                "image": "registry.invalid/baotin/api-gateway:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "api-gateway-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "api-gateway-runtime",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "api-gateway-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "auth-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "auth-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "auth-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "auth-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "auth-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "auth-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "auth-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "auth-service",
+                "image": "registry.invalid/baotin/auth-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "auth-keys",
+                    "mountPath": "/run/auth-keys",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "auth-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "auth-service-runtime",
+                  "defaultMode": 288
+                }
+              },
+              {
+                "name": "auth-keys",
+                "secret": {
+                  "secretName": "auth-keys",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "auth-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "threat-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "threat-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "threat-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "threat-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "threat-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "threat-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "threat-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "threat-service",
+                "image": "registry.invalid/baotin/threat-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "threat-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "threat-service-runtime",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "threat-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "report-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "report-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "report-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "report-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "report-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "report-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "report-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "report-service",
+                "image": "registry.invalid/baotin/report-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "report-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "report-service-runtime",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "report-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "reputation-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "reputation-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "reputation-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "reputation-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "reputation-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "reputation-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "reputation-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "reputation-service",
+                "image": "registry.invalid/baotin/reputation-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "reputation-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "reputation-service-runtime",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "reputation-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "model-inference-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "model-inference-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "model-inference-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "model-inference-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "model-inference-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "model-inference-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "model-inference-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "model-inference-service",
+                "image": "registry.invalid/baotin/model-inference-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "500m",
+                    "memory": "1536Mi"
+                  },
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "3Gi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "models",
+                    "mountPath": "/models",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "model-inference-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "model-inference-service-runtime",
+                  "defaultMode": 288
+                }
+              },
+              {
+                "name": "models",
+                "persistentVolumeClaim": {
+                  "claimName": "baotin-models",
+                  "readOnly": true
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "model-inference-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "notification-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "notification-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "notification-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "notification-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "notification-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "notification-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "notification-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "notification-service",
+                "image": "registry.invalid/baotin/notification-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "notification-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "notification-service-runtime",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "notification-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "search-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "search-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "search-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "search-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "search-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "search-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "search-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "search-service",
+                "image": "registry.invalid/baotin/search-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "search-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "search-service-runtime",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "search-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "campaign-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "campaign-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "campaign-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "campaign-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "campaign-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "campaign-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "campaign-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "campaign-service",
+                "image": "registry.invalid/baotin/campaign-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "campaign-service-public"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "campaign-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "analytics-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "analytics-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "analytics-service",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "analytics-service",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "analytics-service"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "analytics-service",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "analytics-service",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1001,
+              "runAsGroup": 1001,
+              "fsGroup": 1001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "analytics-service",
+                "image": "registry.invalid/baotin/analytics-service:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "private-config",
+                    "mountPath": "/run/private",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "env": [
+                  {
+                    "name": "SPRING_CONFIG_IMPORT",
+                    "value": "configtree:/run/private/,configtree:/run/public/"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "analytics-service-public"
+                }
+              },
+              {
+                "name": "private-config",
+                "secret": {
+                  "secretName": "analytics-service-runtime",
+                  "defaultMode": 288
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "analytics-service-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "frontend",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "frontend",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app.kubernetes.io/part-of": "baotin",
+          "app.kubernetes.io/name": "frontend",
+          "baotin.io/role": "runtime"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "frontend",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 3,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "frontend"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/part-of": "baotin",
+              "app.kubernetes.io/name": "frontend",
+              "baotin.io/role": "runtime"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "frontend",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 101,
+              "runAsGroup": 101,
+              "fsGroup": 101,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "imagePullSecrets": [
+              {
+                "name": "baotin-registry"
+              }
+            ],
+            "containers": [
+              {
+                "name": "frontend",
+                "image": "registry.invalid/baotin/frontend:UNCONFIGURED",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "32Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "128Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/run/public",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "public-config",
+                    "mountPath": "/etc/nginx/conf.d",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 72
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "timeoutSeconds": 3,
+                  "periodSeconds": 5,
+                  "failureThreshold": 3
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "sizeLimit": "512Mi"
+                }
+              },
+              {
+                "name": "public-config",
+                "configMap": {
+                  "name": "frontend-public"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "frontend-public",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "default-deny",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "cluster-dns",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 53,
+                "protocol": "UDP"
+              },
+              {
+                "port": 53,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "frontend-outbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "frontend"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "api-gateway"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "api-gateway-outbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "api-gateway"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "auth-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "threat-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "report-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "notification-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "search-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "analytics-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "threat-service-outbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "threat-service"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "auth-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "model-inference-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "reputation-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "report-service-outbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "report-service"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "auth-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "threat-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "analytics-service-outbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "analytics-service"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "auth-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "reputation-service-outbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "reputation-service"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "auth-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "notification-service-outbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "notification-service"
+          }
+        },
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "auth-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "threat-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "api-gateway-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "api-gateway"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "frontend"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "auth-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "auth-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "api-gateway"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "threat-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "report-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "analytics-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "reputation-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "notification-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "threat-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "threat-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "api-gateway"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "report-service"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "notification-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "report-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "report-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "api-gateway"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "reputation-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "reputation-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "threat-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "model-inference-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "model-inference-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "threat-service"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "notification-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "notification-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "api-gateway"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "search-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "search-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "api-gateway"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "analytics-service-inbound",
+        "labels": {
+          "app.kubernetes.io/part-of": "baotin"
+        }
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/part-of": "baotin",
+            "app.kubernetes.io/name": "analytics-service"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/part-of": "baotin",
+                    "app.kubernetes.io/name": "api-gateway"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

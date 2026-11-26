@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/threat/threat-reputation-events-v1",
+  "title": "BaoTin threat events consumed by Reputation Service v1",
+  "description": "Threat Service owns scans and raw target data. It publishes only bounded rule/AI signals; Reputation never reads the threat schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "aggregateType",
+    "aggregateId",
+    "correlationId",
+    "causationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "const": "threat.updated"
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "const": "threat-service"
+    },
+    "aggregateType": {
+      "const": "ThreatTarget"
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "traceId": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["threatTargetId", "targetType"],
+      "anyOf": [
+        {
+          "required": ["ruleSignal"]
+        },
+        {
+          "required": ["aiSignal"]
+        }
+      ],
+      "properties": {
+        "threatTargetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "targetType": {
+          "type": "string",
+          "enum": ["URL", "PHONE", "BANK_ACCOUNT", "EMAIL", "OTHER"]
+        },
+        "ruleSignal": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "aiSignal": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    }
+  }
+}

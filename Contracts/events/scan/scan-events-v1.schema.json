@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/scan/events-v1",
+  "title": "Scan and target events on baotin.scan.events.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "producer",
+    "aggregateType",
+    "aggregateId",
+    "occurredAt",
+    "correlationId",
+    "causationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "enum": [
+        "scan.completed",
+        "target.created",
+        "target.updated"
+      ]
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "producer": {
+      "const": "threat-service"
+    },
+    "aggregateType": {
+      "enum": [
+        "Scan",
+        "Target"
+      ]
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "eventType": {
+            "const": "scan.completed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "aggregateType": {
+            "const": "Scan"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scanId",
+              "scanType",
+              "targetId",
+              "authenticated",
+              "finalScore",
+              "riskLevel",
+              "aiAvailable",
+              "embeddedUrlCount",
+              "modelName",
+              "modelVersion",
+              "modelLabel",
+              "modelLatencyMs"
+            ],
+            "properties": {
+              "scanId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "scanType": {
+                "enum": [
+                  "TEXT",
+                  "URL"
+                ]
+              },
+              "targetId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "authenticated": {
+                "type": "boolean"
+              },
+              "finalScore": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "riskLevel": {
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              },
+              "aiAvailable": {
+                "type": "boolean"
+              },
+              "embeddedUrlCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "modelName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "modelVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "modelLabel": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "modelLatencyMs": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "aggregateType": {
+            "const": "Target"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "targetId",
+              "targetType",
+              "canonicalHash"
+            ],
+            "properties": {
+              "targetId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "targetType": {
+                "const": "URL"
+              },
+              "canonicalHash": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

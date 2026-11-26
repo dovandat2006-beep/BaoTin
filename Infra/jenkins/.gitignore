@@ -1,0 +1,6 @@
+# Bí mật cục bộ — KHÔNG commit
+.env
+init/baotin-ci.properties
+*_rsa
+*.pem
+*.key

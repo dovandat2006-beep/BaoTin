@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="vi"><meta charset="utf-8"><meta name="referrer" content="no-referrer">
+<title>BảoTin — OAuth staging check</title>
+<h1>BảoTin — kiểm chứng OAuth Web</h1>
+<p>Chỉ dùng tài khoản test. Google/Facebook đăng nhập trên trang chính thức của nhà cung cấp.</p>
+<button id="google">Kiểm chứng Google</button>
+<button id="facebook">Kiểm chứng Facebook</button>
+<p id="status" role="status">Sẵn sàng. Không hiển thị token, code hay thông tin tài khoản.</p>
+<div id="onboarding" hidden><label>Email test để hoàn thành onboarding <input id="contact" type="email" autocomplete="off"></label><button id="submitContact">Tiếp tục</button></div>
+<div id="mfa" hidden><label>Mã authenticator của tài khoản test <input id="factor" inputmode="numeric" autocomplete="off"></label><button id="submitFactor">Xác minh</button></div>
+<script>
+'use strict';
+const config = __OAUTH_CHECK_CONFIG__;
+const status = document.getElementById('status');
+const storageKey = 'baotin-oauth-check-pending';
+const zeroResult = provider => ({provider, passed:false, phase:'transport', exchange:0,
+  wrongPkce:0, wrongTransport:0, replay:0, profile:0, admin:0, missingCsrf:0,
+  refresh:0, logout:0, revoked:0});
+let pending, ticket, report, activeToken, activeCsrf;
+const base64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+async function request(path, body, headers = {}, method = 'POST') {
+  return fetch(config.api + path, {method, credentials:'include', cache:'no-store',
+    headers:body ? {'Content-Type':'application/json', ...headers} : headers,
+    body:body ? JSON.stringify(body) : undefined, redirect:'error'});
+}
+function check(value) {if (!value) throw new Error('check');}
+async function publish() {
+  await fetch('/result', {method:'POST', cache:'no-store', headers:{'Content-Type':'application/json',
+    'X-Check-Nonce':config.nonce}, body:JSON.stringify(report)});
+}
+function clear() {
+  sessionStorage.removeItem(storageKey); pending = null; ticket = null;
+  activeToken = null; activeCsrf = null;
+  document.getElementById('factor').value = ''; document.getElementById('contact').value = '';
+}
+async function failure() {
+  // No exception body, URI, account detail or credentials enter the page/report.
+  status.textContent = 'Chưa PASS — bước ' + report.phase + ', HTTP ' + report.exchange + '. Có thể cần email test riêng hoặc cấu hình provider.';
+  if (activeCsrf) {try {await request('/api/v1/auth/web/logout', null, {'X-CSRF-TOKEN':activeCsrf});} catch (_) {}}
+  await publish(); clear();
+}
+async function start(provider) {
+  clear(); report = zeroResult(provider);
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
+  pending = {provider, verifier, started:Date.now()};
+  // Fixture-only: PKCE verifier is scoped to this tab and erased after exchange/error.
+  // Access/refresh tokens are never persisted in browser storage or the receiver.
+  sessionStorage.setItem(storageKey, JSON.stringify(pending));
+  const response = await request('/api/v1/auth/oauth2/requests', {provider, transport:'WEB',
+    returnUri:config.origin + '/auth/callback', codeChallenge:challenge});
+  report.exchange = response.status; check(response.status === 200);
+  const url = new URL((await response.json()).authorizationUrl);
+  check(url.protocol === 'https:' && (provider === 'GOOGLE' ? url.hostname === 'accounts.google.com' : url.hostname === 'www.facebook.com'));
+  window.location.assign(url.href);
+}
+async function validateSession(tokens) {
+  report.phase = 'session'; activeToken = tokens.accessToken; activeCsrf = tokens.csrfToken;
+  check(typeof activeToken === 'string' && typeof activeCsrf === 'string' && !('refreshToken' in tokens));
+  const me = await request('/api/v1/auth/me', null, {Authorization:'Bearer ' + activeToken}, 'GET');
+  report.profile = me.status; check(me.status === 200 && (await me.json()).role === 'USER');
+  report.admin = (await request('/api/v1/auth/admin/users', null, {Authorization:'Bearer ' + activeToken}, 'GET')).status;
+  check(report.admin === 403);
+  report.missingCsrf = (await request('/api/v1/auth/web/refresh')).status; check(report.missingCsrf === 403);
+  const refresh = await request('/api/v1/auth/web/refresh', null, {'X-CSRF-TOKEN':activeCsrf});
+  report.refresh = refresh.status; check(refresh.status === 200);
+  const rotated = await refresh.json(); check(rotated.csrfToken !== activeCsrf && !('refreshToken' in rotated));
+  activeToken = rotated.accessToken; activeCsrf = rotated.csrfToken;
+  report.logout = (await request('/api/v1/auth/web/logout', null, {'X-CSRF-TOKEN':activeCsrf})).status;
+  check(report.logout === 204); activeCsrf = null;
+  report.revoked = (await request('/api/v1/auth/me', null, {Authorization:'Bearer ' + activeToken}, 'GET')).status;
+  check(report.revoked === 401);
+  report.phase = 'complete'; report.passed = true; await publish();
+  status.textContent = pending.provider + ' PASS — JWT/USER, admin403, PKCE/transport/replay401, CSRF403, refresh200, logout204, revoked401.';
+  clear();
+}
+async function exchange(contactEmail) {
+  report.phase = 'exchange'; const body = {code:ticket, codeVerifier:pending.verifier};
+  if (contactEmail) body.contactEmail = contactEmail;
+  const response = await request('/api/v1/auth/web/oauth2/tokens', body);
+  report.exchange = response.status; check(response.status === 200);
+  const result = await response.json();
+  if (result.onboardingRequired) {
+    report.phase = 'onboarding'; await publish(); document.getElementById('onboarding').hidden = false;
+    status.textContent = 'Provider không trả email. Điền email test để kiểm chứng onboarding; email này chưa được verified.';
+    return;
+  }
+  report.replay = (await request('/api/v1/auth/web/oauth2/tokens', body)).status;
+  check(report.replay === 401); ticket = null;
+  if (result.mfaRequired) {
+    report.phase = 'mfa'; pending.mfaChallenge = result.challenge; await publish();
+    document.getElementById('mfa').hidden = false; status.textContent = 'Tài khoản test yêu cầu TOTP.'; return;
+  }
+  await validateSession(result);
+}
+async function callback() {
+  const query = new URLSearchParams(location.search); ticket = query.get('code');
+  const denied = query.get('error'); history.replaceState(null, '', '/auth/callback');
+  pending = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+  check(pending && ['GOOGLE','FACEBOOK'].includes(pending.provider) && Date.now() - pending.started < 300000);
+  report = zeroResult(pending.provider);
+  if (denied) {report.phase = 'denied'; await publish(); status.textContent = 'Consent đã bị hủy; không cấp phiên.'; clear(); return;}
+  check(ticket && /^[A-Za-z0-9_-]{43}$/.test(ticket));
+  const body = {code:ticket, codeVerifier:pending.verifier};
+  report.wrongTransport = (await request('/api/v1/auth/oauth2/tokens', body)).status;
+  check(report.wrongTransport === 401);
+  report.wrongPkce = (await request('/api/v1/auth/web/oauth2/tokens', {...body,
+    codeVerifier:base64url(crypto.getRandomValues(new Uint8Array(32)))})).status;
+  check(report.wrongPkce === 401); await exchange();
+}
+document.getElementById('google').onclick = () => start('GOOGLE').catch(failure);
+document.getElementById('facebook').onclick = () => start('FACEBOOK').catch(failure);
+document.getElementById('submitContact').onclick = () => {
+  const contact = document.getElementById('contact').value; document.getElementById('onboarding').hidden = true;
+  exchange(contact).catch(failure);
+};
+document.getElementById('submitFactor').onclick = async () => {
+  try {
+    const code = document.getElementById('factor').value; document.getElementById('factor').value = '';
+    const response = await request('/api/v1/auth/web/mfa/challenges', {challenge:pending.mfaChallenge, code});
+    check(response.status === 200); document.getElementById('mfa').hidden = true;
+    await validateSession(await response.json());
+  } catch (_) {await failure();}
+};
+if (location.pathname === '/auth/callback') callback().catch(async () => {
+  report ||= zeroResult('GOOGLE'); await failure();
+});
+</script></html>

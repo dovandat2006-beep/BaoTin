@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/search/rebuild-manifest-v1",
+  "title": "Complete owning-source snapshot set for checkpointed Search rebuild",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "dataFile",
+    "sha256",
+    "records",
+    "sources"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "type": "integer"
+    },
+    "runId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataFile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "records": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "snapshotAt",
+          "complete"
+        ],
+        "properties": {
+          "source": {
+            "enum": [
+              "threat-service",
+              "reputation-service",
+              "campaign-service"
+            ]
+          },
+          "snapshotAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "complete": {
+            "const": true
+          }
+        }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "properties": {
+              "source": {
+                "const": "threat-service"
+              }
+            },
+            "required": [
+              "source"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "source": {
+                "const": "reputation-service"
+              }
+            },
+            "required": [
+              "source"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "properties": {
+              "source": {
+                "const": "campaign-service"
+              }
+            },
+            "required": [
+              "source"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    }
+  }
+}

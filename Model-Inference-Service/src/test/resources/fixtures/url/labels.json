@@ -1,0 +1,13 @@
+{
+  "labels": [
+    "benign",
+    "phishing_bank",
+    "phishing_ecommerce",
+    "phishing_gaming",
+    "phishing_gov",
+    "phishing_other"
+  ],
+  "benignClassIds": [
+    0
+  ]
+}

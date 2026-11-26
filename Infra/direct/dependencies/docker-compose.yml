@@ -1,0 +1,66 @@
+name: baotin-deps
+services:
+  postgres:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_DB: baotin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+    ports:
+      - target: 5432
+        published: ${POSTGRES_PORT:-15432}
+        host_ip: 127.0.0.1
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - type: bind
+        source: ${BAOTIN_SECRETS_DIR:?Set external secret directory}/postgres/password
+        target: /run/secrets/postgres-password
+        read_only: true
+        bind: {create_host_path: false}
+    networks: [dependencies]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U postgres -d baotin"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 1.0
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    user: "999:1000"
+    entrypoint: [sh, /opt/baotin/start-redis.sh]
+    ports:
+      - target: 6379
+        published: ${REDIS_PORT:-16379}
+        host_ip: 127.0.0.1
+    volumes:
+      - redis-data:/data
+      - type: bind
+        source: ${BAOTIN_SECRETS_DIR}/gateway-config/spring.data.redis.password
+        target: /run/secrets/redis-password
+        read_only: true
+        bind: {create_host_path: false}
+      - ./start-redis.sh:/opt/baotin/start-redis.sh:ro
+    networks: [dependencies]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$(cat /run/secrets/redis-password)" redis-cli ping | grep -qx PONG']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    read_only: true
+    tmpfs: ["/tmp:size=8m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    cpus: 0.5
+    restart: unless-stopped
+networks:
+  dependencies:
+    # Host JARs need published loopback ports; internal=true disables forwarding here.
+    driver: bridge
+volumes:
+  pg-data:
+  redis-data:

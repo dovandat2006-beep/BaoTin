@@ -1,0 +1,7 @@
+ArtifactTokenizer.java contains a Java adaptation of the PhoBERT BPE algorithm from:
+Hugging Face transformers v4.57.1, src/transformers/models/phobert/tokenization_phobert.py
+Copyright (c) 2020 VinAI Research and the HuggingFace Inc. team.
+Copyright 2018 The Open AI Team Authors and The HuggingFace Inc. team.
+Licensed under Apache License 2.0; see LICENSES/Apache-2.0.txt.
+Changes: Java implementation, immutable artifact inputs, bounded per-request processing,
+Python whitespace compatibility and exact Python-generated parity enforcement.

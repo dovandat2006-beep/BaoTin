@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: BaoTin
+    orgId: 1
+    folder: BaoTin
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: ${BAOTIN_MONITORING_DASHBOARDS}

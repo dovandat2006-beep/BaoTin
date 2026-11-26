@@ -1,0 +1,31 @@
+{
+  "clsId": 57344,
+  "sepId": 57345,
+  "padId": 0,
+  "addedTokens": [
+    {
+      "id": 0,
+      "content": "\u0000",
+      "lstrip": false,
+      "rstrip": false
+    },
+    {
+      "id": 57344,
+      "content": "",
+      "lstrip": false,
+      "rstrip": false
+    },
+    {
+      "id": 57345,
+      "content": "",
+      "lstrip": false,
+      "rstrip": false
+    },
+    {
+      "id": 57347,
+      "content": "",
+      "lstrip": true,
+      "rstrip": false
+    }
+  ]
+}

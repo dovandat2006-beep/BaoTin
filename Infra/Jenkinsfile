@@ -1,0 +1,79 @@
+// Protect Infra main/job configuration; deployment runs only on the isolated Windows node.
+pipeline {
+    agent none
+    options { timestamps(); disableConcurrentBuilds(); timeout(time: 120, unit: 'MINUTES') }
+    parameters {
+        booleanParam(name: 'DEPLOY_RELEASE', defaultValue: false, description: 'Promote tested backend JARs and frontend web after approval')
+        booleanParam(name: 'BUILD_DOCKER_IMAGES', defaultValue: false, description: 'Also publish alternative Docker images')
+        string(name: 'ANDROID_DOWNLOAD_ID', defaultValue: 'e4c7bf859ec4c2c18b453e33be309ef3f83fb7963e75f495b69aa71ba2eb09e0', description: 'Reviewed Android source SHA256, independent of the web revision; empty explicitly omits the APK')
+        choice(name: 'DEPLOY_TARGET', choices: ['jar', 'docker', 'vps', 'k8s', 'k3s'], description: 'Reviewed deployment target; cluster targets require explicit external kubeconfig/context/namespace and immutable images')
+    }
+    stages {
+        stage('Build full stack') {
+            steps {
+                script {
+                    def projects = ['API-Gateway','Auth-Service','Threat-Service','Report-Service','Reputation-Service',
+                        'Model-Inference-Service','Notification-Service','Search-Service','Campaign-Service','Analytics-Service','Frontend']
+                    projects.each { project ->
+                        def name = project
+                            def childParameters = [booleanParam(name: 'BUILD_DOCKER_IMAGE', value: params.BUILD_DOCKER_IMAGES)]
+                            if (name == 'Frontend') { childParameters << string(name: 'ANDROID_DOWNLOAD_ID', value: params.ANDROID_DOWNLOAD_ID ?: '') }
+                            def result = build job: "baotin/${name}", wait: true, propagate: true, parameters: childParameters
+                            def buildKey = "BUILD_${name.replace('-', '_').toUpperCase()}"
+                            env."${buildKey}" = result.number.toString()
+                    }
+                    // Sequential child builds keep local disk/RAM bounded and fail at the first gate.
+                }
+            }
+        }
+        stage('Maintainer approval') {
+            when { expression { params.DEPLOY_RELEASE } }
+            steps { input message: 'Deploy the gated release to the explicitly selected JAR/Docker/VPS/K8s/K3s target?', submitter: 'baotin-maintainers' }
+        }
+        stage('Deploy JAR and web') {
+            when { beforeAgent true; expression { params.DEPLOY_RELEASE } }
+            agent { label 'baotin-deploy-desktop' }
+            steps {
+                checkout scm
+                powershell '''
+                    $ErrorActionPreference='Stop'
+                    if(-not $env:BAOTIN_JAR_ENV_FILE){throw 'External JAR/web deployment configuration required'}
+                    $names=@('API-Gateway','Auth-Service','Threat-Service','Report-Service','Reputation-Service','Model-Inference-Service','Notification-Service','Search-Service','Campaign-Service','Analytics-Service','Frontend')
+                    $builds=@{}
+                    foreach($name in $names){
+                        $key='BUILD_'+$name.Replace('-','_').ToUpperInvariant()
+                        $number=[Environment]::GetEnvironmentVariable($key)
+                        if($number -notmatch '^[1-9][0-9]{0,8}$'){throw 'Successful immutable build number required'}
+                        $builds[$name]=[int]$number
+                    }
+                    $manifest=Join-Path $env:TEMP ('baotin-builds-'+[guid]::NewGuid()+'.json')
+                    try{
+                        $builds|ConvertTo-Json|Set-Content -LiteralPath $manifest
+                        $cfg=@{}
+                        foreach($line in Get-Content $env:BAOTIN_JAR_ENV_FILE){if($line -match '^([A-Z][A-Z0-9_]*)=(.*)$'){$cfg[$Matches[1]]=$Matches[2]}}
+                        switch($env:DEPLOY_TARGET){
+                            'jar' { & pwsh -NoProfile -File direct/Deploy-Jars.ps1 -EnvFile $env:BAOTIN_JAR_ENV_FILE -BuildsFile $manifest }
+                            'docker' {
+                                if(-not $cfg.DOCKER_ALT_ENV_FILE){throw 'External DOCKER_ALT_ENV_FILE is required'}
+                                $release=Join-Path $cfg.RUNTIME_ROOT ('docker-releases/release-'+[guid]::NewGuid().ToString('N'))
+                                & pwsh -NoProfile -File alternative/Deploy-JenkinsDocker.ps1 -BuildsFile $manifest -JarEnvFile $env:BAOTIN_JAR_ENV_FILE -AlternativeEnvFile $cfg.DOCKER_ALT_ENV_FILE -ReleaseDirectory $release
+                            }
+                            'vps' {
+                                if(-not $cfg.VPS_CONFIG_FILE -or -not $cfg.VPS_IMAGE_MANIFEST -or -not $cfg.VPS_SSH_KEY_FILE){throw 'Configure external VPS paths before selecting SSH deployment'}
+                                & pwsh -NoProfile -File vps/Deploy-SSH.ps1 -ConfigFile $cfg.VPS_CONFIG_FILE -ImageManifest $cfg.VPS_IMAGE_MANIFEST -KeyFile $cfg.VPS_SSH_KEY_FILE
+                            }
+                            { $_ -in @('k8s','k3s') } {
+                                foreach($key in @('KUBERNETES_CONFIG_FILE','KUBERNETES_IMAGE_MANIFEST','KUBERNETES_KUBECONFIG_FILE','KUBERNETES_STATE_DIRECTORY')){
+                                    if(-not $cfg[$key]){throw 'External cluster configuration, immutable image manifest, kubeconfig and state directory are required'}
+                                }
+                                & pwsh -NoProfile -File kubernetes/Deploy-Kubernetes.ps1 -Profile $env:DEPLOY_TARGET -ConfigFile $cfg.KUBERNETES_CONFIG_FILE -ImageManifest $cfg.KUBERNETES_IMAGE_MANIFEST -KubeConfig $cfg.KUBERNETES_KUBECONFIG_FILE -StateDirectory $cfg.KUBERNETES_STATE_DIRECTORY -BuildsFile $manifest -JarEnvFile $env:BAOTIN_JAR_ENV_FILE
+                            }
+                            default { throw 'Unknown deployment target' }
+                        }
+                        if($LASTEXITCODE -ne 0){throw 'Selected deployment target failed'}
+                    }finally{Remove-Item -LiteralPath $manifest -ErrorAction SilentlyContinue}
+                '''
+            }
+        }
+    }
+}

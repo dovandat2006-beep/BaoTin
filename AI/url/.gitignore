@@ -1,0 +1,26 @@
+# Dataset
+data/
+
+# Model outputs
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# HuggingFace / Torch cache
+.hf_cache/
+.torch_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store

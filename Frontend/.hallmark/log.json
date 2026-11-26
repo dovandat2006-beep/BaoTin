@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2026-11-16",
+    "scope": "app",
+    "targets": 18,
+    "macrostructure": "Operate / focused workbench and task settings",
+    "theme": "BaoTin Material 3 (DESIGN.md)",
+    "typography": "Roboto",
+    "icons": "Font Awesome",
+    "enrichment": "none",
+    "brief": "Cohesive cross-platform shell, scam checks, lookup/history, reporting/monitoring, account and administration; live Gateway boundaries preserved",
+    "review": "Independent A/B critiques archived per target; combined foundation review. Pre-polish scores, not final re-scores.",
+    "verification": "Final foundation60,scopedquality156,devjourney24 pass; fullCI in per-target dated artifacts. Upstream integration/release still in progress."
+  },
+  {
+    "date": "2026-11-13",
+    "scope": "scan",
+    "macrostructure": "Workbench",
+    "theme": "BaoTin Material 3 (DESIGN.md)",
+    "enrichment": "none",
+    "brief": "URL/SMS input, evidence-first results; existing shell preserved",
+    "review": {
+      "P": 4,
+      "H": 4,
+      "E": 4,
+      "S": 5,
+      "R": 5,
+      "V": 4
+    }
+  },
+  {
+    "date": "2026-09-28",
+    "macrostructure": "Workbench",
+    "theme": "studied-DNA (Kaspersky layout, Material light palette)",
+    "enrichment": "none",
+    "brief": "BaoTin minimal scam detection and reporting app"
+  }
+]

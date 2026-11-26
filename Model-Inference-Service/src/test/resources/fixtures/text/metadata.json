@@ -1,0 +1,8 @@
+{
+  "modelName": "phobert-sms",
+  "modelVersion": "TEST-FIXTURE",
+  "tokenizer": "phobert",
+  "referenceRuntime": "1.19.2",
+  "referenceTransformers": "4.57.1",
+  "source": "vietluccuu/AI/sms"
+}

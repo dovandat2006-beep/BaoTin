@@ -1,0 +1,16 @@
+# URL Phishing Detection with CANINE
+# ===================================
+# PhishVN Dataset + Google CANINE (character-level Transformer)
+
+torch
+transformers
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
+tqdm
+onnx
+onnxruntime
+requests
+safetensors

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/auth/user-events-v1",
+  "title": "BảoTin user lifecycle event envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "eventVersion", "occurredAt", "producer", "aggregateType", "aggregateId", "correlationId", "causationId", "payload"],
+  "properties": {
+    "eventId": {"type": "string", "format": "uuid"},
+    "eventType": {"enum": ["user.created", "user.updated", "user.role.changed", "user.status.changed"]},
+    "eventVersion": {"const": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "producer": {"const": "auth-service"},
+    "aggregateType": {"const": "User"},
+    "aggregateId": {"type": "string", "format": "uuid"},
+    "correlationId": {"type": "string", "format": "uuid"},
+    "causationId": {"type": ["string", "null"], "format": "uuid"},
+    "payload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["userId", "status", "role", "securityVersion"],
+      "properties": {
+        "userId": {"type": "string", "format": "uuid"},
+        "status": {"enum": ["ACTIVE", "LOCKED", "DISABLED", "DELETED"]},
+        "role": {"enum": ["USER", "MODERATOR", "ADMIN"]},
+        "securityVersion": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

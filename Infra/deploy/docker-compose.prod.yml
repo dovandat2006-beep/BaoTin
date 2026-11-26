@@ -1,0 +1,358 @@
+# =============================================================================
+#  BaoTin — Production stack
+#
+#  Được sinh tự động bởi scripts/generate-deploy-infra.ps1 — đừng sửa tay,
+#  hãy sửa service-map.ps1 rồi chạy lại generator.
+#
+#  Deploy:  ./deploy.sh <service> <tag> <env>
+#  Rollback: ./rollback.sh <service>
+# =============================================================================
+
+name: baotin-prod
+
+services:
+  # ===========================================================================
+  # INFRA
+  # ===========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: baotin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-baotin}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Cần set POSTGRES_PASSWORD trong .env}
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-baotin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ baotin-net ]
+
+  redis:
+    image: redis:7-alpine
+    container_name: baotin-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [ baotin-net ]
+
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: baotin-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks: [ baotin-net ]
+
+  minio:
+    image: minio/minio:latest
+    container_name: baotin-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Cần set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Cần set MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [ baotin-net ]
+
+  # ===========================================================================
+  # MICROSERVICES — image do CI/CD build và push, không build tại chỗ
+  # ===========================================================================
+  api-gateway:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_API_GATEWAY}
+    container_name: baotin-api-gateway
+    restart: unless-stopped
+    ports:
+      - "${PORT_API_GATEWAY}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      redis:
+        condition: service_started
+
+
+  auth-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_AUTH_SERVICE}
+    container_name: baotin-auth-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_AUTH_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=auth
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_AUTH}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  threat-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_THREAT_SERVICE}
+    container_name: baotin-threat-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_THREAT_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=threat
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_THREAT}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  report-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_REPORT_SERVICE}
+    container_name: baotin-report-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_REPORT_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=report
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_REPORT}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  reputation-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_REPUTATION_SERVICE}
+    container_name: baotin-reputation-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_REPUTATION_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=reputation
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_REPUTATION}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  model-inference-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_MODEL_INFERENCE_SERVICE}
+    container_name: baotin-model-inference-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_MODEL_INFERENCE_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      redis:
+        condition: service_started
+
+
+  notification-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_NOTIFICATION_SERVICE}
+    container_name: baotin-notification-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_NOTIFICATION_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=notification
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_NOTIFICATION}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  search-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_SEARCH_SERVICE}
+    container_name: baotin-search-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_SEARCH_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=search
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_SEARCH}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  campaign-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_CAMPAIGN_SERVICE}
+    container_name: baotin-campaign-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_CAMPAIGN_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=campaign
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_CAMPAIGN}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  analytics-service:
+    # Trong CI/CD image KHÔNG được build tại chỗ — luôn pull từ ghcr.io
+    image: ${IMAGE_TAG_ANALYTICS_SERVICE}
+    container_name: baotin-analytics-service
+    restart: unless-stopped
+    ports:
+      - "${PORT_ANALYTICS_SERVICE}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${POSTGRES_HOST:-postgres}:5432/${POSTGRES_DB:-baotin}?currentSchema=analytics
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS_ANALYTICS}
+      - SPRING_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
+
+  # ===========================================================================
+  # REVERSE PROXY (đặt trước gateway để nhận traffic)
+  # ===========================================================================
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: baotin-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      api-gateway:
+        condition: service_started
+    networks: [ baotin-net ]
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: baotin-certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c "trap exit TERM;
+      while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $; done"
+
+volumes:
+  postgres_data:
+  redis_data:
+  kafka_data:
+  minio_data:
+
+networks:
+  baotin-net:
+    name: baotin-prod-net
+    driver: bridge

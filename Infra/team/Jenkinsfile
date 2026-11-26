@@ -1,0 +1,30 @@
+// Configure this job only from an approved Infra revision, restricted to maintainers.
+pipeline {
+    agent none
+    options { timestamps(); disableConcurrentBuilds(); timeout(time: 30, unit: 'MINUTES') }
+    parameters { string(name: 'AUTH_DIGEST', defaultValue: '', description: 'Approved immutable Auth image ref'); string(name: 'GATEWAY_DIGEST', defaultValue: '', description: 'Approved immutable Gateway image ref') }
+    stages {
+        stage('Maintainer promotion approval') {
+            steps { input message: 'Promote verified Auth/Gateway digests to BảoTin team?', submitter: 'baotin-maintainers' }
+        }
+        stage('Deploy on isolated Windows node') {
+            agent { label 'baotin-deploy-desktop' }
+            steps {
+                checkout scm
+                powershell '''
+                    $ErrorActionPreference='Stop'
+                    if(-not $env:BAOTIN_TEAM_ENV_FILE){throw 'External public team env path required'}
+                    foreach($value in @($env:AUTH_DIGEST,$env:GATEWAY_DIGEST)){
+                        if($value -notmatch '^ghcr\\.io/[a-z0-9_-]+/(auth-service|api-gateway)@sha256:[a-f0-9]{64}$'){throw 'Approved registry digest required'}
+                    }
+                    $release=Join-Path $env:TEMP ('baotin-promotion-'+[guid]::NewGuid()+'.json')
+                    try{
+                        @{authImage=$env:AUTH_DIGEST;gatewayImage=$env:GATEWAY_DIGEST}|ConvertTo-Json|Set-Content -LiteralPath $release
+                        & pwsh -NoProfile -File team/Deploy-Team.ps1 -EnvFile $env:BAOTIN_TEAM_ENV_FILE -ReleaseFile $release
+                        if($LASTEXITCODE -ne 0){throw 'Deployment failed'}
+                    }finally{Remove-Item -LiteralPath $release -ErrorAction SilentlyContinue}
+                '''
+            }
+        }
+    }
+}

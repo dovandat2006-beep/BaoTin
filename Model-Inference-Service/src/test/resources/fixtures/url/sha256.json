@@ -1,0 +1,11 @@
+{
+  "fixture.weights": "e26f804ca5c8b014de9c687ebc24b7875cc8b642c7db0c3e9eb55eade2c03f10",
+  "labels.json": "2faca9359eab380091251fdd9bcf83cab068f7b4db3a2803f9932861eaddd476",
+  "metadata.json": "a5466c21af8df178abf33ec3f995ad97fca77a9c7896c8cdc8c21952967feddb",
+  "model.onnx": "bad9fe44589322a8100cb8df2dcb0636a38626e60ec1b6247539fb595d7bcdcd",
+  "parity.json": "67ce3e9aa989fd57e4cd20cad62c3d6a642b477e69eb6bc006ab4dde6f140387",
+  "preprocessing.json": "c7ff8ad56b33b6bc5c3a09e4ca0c22becf72e8e006aa93c6ff38f1a5613ea57f",
+  "special_tokens_map.json": "dbc8b97d65393e9f4c33ff8b389a31fd4176d76afd522d9ab41c523dd2fdb647",
+  "tokenizer-spec.json": "da3b7615fa1666f6251c5bd2531427f4ed9f863c8368c78c892affc4c7177479",
+  "tokenizer_config.json": "91c11e049c94422661f77ee484c550705483b21eac0c61c8db4b76b02297c428"
+}

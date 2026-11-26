@@ -1,0 +1,87 @@
+name: baotin-domain-deps
+services:
+  volume-init:
+    image: alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+    user: "0:0"
+    network_mode: none
+    entrypoint: [sh, -c]
+    command: ["chown 1000:1000 /kafka-data && chown 1001:0 /minio-data"]
+    volumes: [kafka-data:/kafka-data, minio-data:/minio-data]
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    security_opt: [no-new-privileges:true]
+  kafka:
+    image: apache/kafka-native:4.1.0@sha256:9a9d16e608944f8f7d30c75c5a5fec0d59f44893f27536b4f0cd6f19ae09164d
+    user: "1000:1000"
+    environment:
+      CLUSTER_ID: baotin-domain-cluster01
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: HOST://:19092,INTERNAL://:29092,CONTROLLER://:29093
+      KAFKA_ADVERTISED_LISTENERS: HOST://127.0.0.1:${KAFKA_HOST_PORT:-19092},INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: HOST:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_LOG_DIRS: /data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: "168"
+    ports:
+      - target: 19092
+        published: "${KAFKA_HOST_PORT:-19092}"
+        host_ip: 127.0.0.1
+    volumes: [kafka-data:/data]
+    networks: [domain]
+    depends_on:
+      volume-init: {condition: service_completed_successfully}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 1.0
+    restart: unless-stopped
+  minio:
+    image: bitnamilegacy/minio:2025.4.22-debian-12-r0@sha256:a26e42a4d6550d2fb7708c8ceefc60474b42c124b6f3273a081721ddf1d86b20
+    user: "1001:0"
+    entrypoint: [/opt/bitnami/minio/bin/minio]
+    command: [server, /data, --address, ":9000", --console-address, ":9001"]
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/root-user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/root-password
+    ports:
+      - target: 9000
+        published: "${MINIO_HOST_PORT:-19000}"
+        host_ip: 127.0.0.1
+    volumes:
+      - minio-data:/data
+      - type: bind
+        source: ${BAOTIN_SECRETS_DIR:?External secret directory required}/minio/root-user
+        target: /run/secrets/root-user
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${BAOTIN_SECRETS_DIR}/minio/root-password
+        target: /run/secrets/root-password
+        read_only: true
+        bind: {create_host_path: false}
+    networks: [domain]
+    depends_on:
+      volume-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, curl, -fsS, http://127.0.0.1:9000/minio/health/ready]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    cpus: 0.5
+    restart: unless-stopped
+networks:
+  domain: {driver: bridge}
+volumes:
+  kafka-data:
+  minio-data:

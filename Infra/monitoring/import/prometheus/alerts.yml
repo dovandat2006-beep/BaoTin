@@ -1,0 +1,42 @@
+groups:
+  - name: baotin-availability
+    rules:
+      - alert: BaoTinSupportingServiceDown
+        expr: probe_success{job="supporting-services"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: '{{ $labels.service }} supporting service probe failed'
+          description: 'HTTP readiness or TCP reachability failed; TCP success alone does not prove dependency correctness.'
+      - alert: BaoTinServiceNotReady
+        expr: probe_success{job="service-readiness"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: '{{ $labels.service }} is not ready'
+          description: 'Check the owned runtime and its dependencies; do not restart unrelated processes.'
+      - alert: BaoTinWebsiteUnavailable
+        expr: probe_success{job="website-https"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: 'Public HTTPS probe failed: {{ $labels.service }}'
+          description: 'Compare local expo-web readiness with public edge/TLS status.'
+      - alert: BaoTinMonitoringTargetDown
+        expr: up == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: 'Monitoring scrape failed: {{ $labels.job }}'
+      - alert: BaoTinTlsCertificateExpiring
+        expr: (probe_ssl_earliest_cert_expiry{job="website-https"} - time()) < 14 * 24 * 3600
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: 'BaoTin HTTPS certificate expires in less than 14 days'
+      - alert: BaoTinSlowProbe
+        expr: probe_duration_seconds{job=~"service-readiness|website-https|supporting-services"} > 3
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: 'Probe for {{ $labels.service }} takes more than 3 seconds'

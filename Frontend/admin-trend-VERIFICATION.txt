@@ -1,0 +1,19 @@
+Admin trend inspection 2026-11-18: chart already exists; application source unchanged.
+Location: Quản trị -> Tổng quan. Windows: 7, 14 (default), 30 days.
+Source: src/components/AdminTrendChart.tsx; src/screens/AdminDashboardScreen.tsx; src/screens/AdminWorkspace.tsx.
+API: /api/v1/analytics/admin/trends?days=7|14|30 via Gateway.
+Chart: daily scan bars/high-risk overlay, risk breakdown, selectable day details; zero data shows empty state.
+TODO chart backlog is stale relative to source.
+COMMAND: npm test -- --runTestsByPath src/lib/admin.test.ts src/api/analytics.test.ts
+INPUT: existing helper/API fixtures, 7/14/30 days
+OUTPUT: Test Suites: 2 passed, 2 total; Tests: 12 passed, 12 total
+EXIT: 0
+COMMAND: npm run typecheck
+OUTPUT: > tsc --noEmit
+EXIT: 0
+COMMAND: npx playwright test tests/e2e/admin.spec.ts --grep 'dashboard labels' --project mobile-375 --project desktop-1440 --output test-results/admin-trend-check
+INPUT: existing explicit demo dist; 375px and 1440px
+OUTPUT: 2 passed (4.8s)
+EXIT: 0
+Local fixtures are not proof of deployed production data. No release performed.
+No dependency/build cache created; pre-existing bundles/dependencies retained.

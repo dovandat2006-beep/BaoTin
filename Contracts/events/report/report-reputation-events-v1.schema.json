@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/report/report-reputation-events-v1",
+  "title": "BaoTin report events consumed by Reputation Service v1",
+  "description": "Report Service owns report moderation. These events are the only report data Reputation consumes; Reputation never reads the report schema. The envelope occurredAt drives report time-decay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "aggregateType",
+    "aggregateId",
+    "correlationId",
+    "causationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "enum": [
+        "report.verified",
+        "report.rejected",
+        "report.revoked"
+      ]
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "const": "report-service"
+    },
+    "aggregateType": {
+      "const": "Report"
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "traceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "payload": {
+      "description": "Accept the canonical Report-Service lifecycle payload without requiring producer-invented severity. Legacy contribution envelopes remain readable.",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "reportId",
+            "targetId",
+            "targetType",
+            "reporterUserId",
+            "status",
+            "version"
+          ],
+          "properties": {
+            "reportId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "targetId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "targetType": {
+              "type": "string",
+              "enum": [
+                "URL",
+                "MESSAGE_TEMPLATE"
+              ]
+            },
+            "reporterUserId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "SUBMITTED",
+                "PENDING_REVIEW",
+                "NEED_MORE_INFO",
+                "VERIFIED",
+                "REJECTED"
+              ]
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reportId",
+            "threatTargetId",
+            "targetType",
+            "severity"
+          ],
+          "properties": {
+            "reportId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "threatTargetId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "targetType": {
+              "type": "string",
+              "enum": [
+                "URL",
+                "PHONE",
+                "BANK_ACCOUNT",
+                "EMAIL",
+                "OTHER"
+              ]
+            },
+            "severity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Moderator/community severity contribution for this report, clamped to 0..100."
+            },
+            "category": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          "description": "Legacy contribution envelope retained for compatibility; new Report-Service emits the canonical lifecycle payload."
+        }
+      ]
+    }
+  }
+}

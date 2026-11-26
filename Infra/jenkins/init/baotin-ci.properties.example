@@ -1,0 +1,49 @@
+# =============================================================================
+#  BaoTin CI — cấu hình cho script khởi tạo Jenkins
+#
+#  Copy thành /var/jenkins_home/baotin-ci.properties trong container
+#  jenkins-blueocean rồi điền giá trị thật. KHÔNG commit bản điền thật.
+#
+#  Cách dùng:
+#     cp baotin-ci.properties.example baotin-ci.properties
+#     # điền GITHUB_TOKEN + DEPLOY_SSH_KEY + SONAR_TOKEN
+#     .\apply-config.ps1
+# =============================================================================
+
+# --- GitHub -----------------------------------------------------------------
+# Owner/tổ chức chứa 10 repo backend
+GITHUB_OWNER=vietluccuu
+
+# Username dùng cho cả push image lẫn checkout source.
+# Với PAT: để x-access-token là chuẩn của GitHub.
+GITHUB_USER=x-access-token
+
+# GitHub PAT (classic). Scope tối thiểu:
+#   repo             — checkout private repo
+#   read:packages    — pull image
+#   write:packages   — push image
+#   admin:repo_hook  — (tuỳ chọn) để trigger Jenkins từ webhook
+GITHUB_TOKEN=REPLACE_WITH_GITHUB_PAT
+
+# --- SonarQube (quality gate) ----------------------------------------------
+# Base URL Jenkins dùng để chạy phân tích và truy vấn quality gate.
+# `sonarqube` là tên container trên network Docker `jenkins`.
+SONAR_HOST_URL=http://sonarqube:9000
+
+# Token phân tích do SonarQube sinh ra (My Account > Security > Generate Tokens).
+# Token này chạy phân tích + đọc quality gate, KHÔNG phải mật khẩu admin.
+SONAR_TOKEN=REPLACE_WITH_SONAR_TOKEN
+
+# --- Deploy qua SSH --------------------------------------------------------
+DEPLOY_HOST=deploy.baotin.vn
+DEPLOY_USER=deploy
+DEPLOY_PATH=/opt/baotin
+
+# Private key OpenSSH của user deploy (không mật khẩu).
+# Nhiều dòng — ghi \n thay cho xuống dòng thật, script sẽ khôi phục:
+#     DEPLOY_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----\nAAAA...\n-----END OPENSSH PRIVATE KEY-----
+#
+# Cách lấy: trên máy deploy chạy
+#     ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_baotin -N ""
+#     cat ~/.ssh/id_ed25519_baotin.pub >> ~/.ssh/authorized_keys
+DEPLOY_SSH_KEY=REPLACE_WITH_SSH_PRIVATE_KEY

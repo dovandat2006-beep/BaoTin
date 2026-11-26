@@ -1,0 +1,132 @@
+name: baotin-alt
+x-runtime: &runtime
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  mem_limit: 384m
+  cpus: 0.5
+  networks: [dependencies]
+services:
+  prepare-secrets:
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    profiles: [operations]
+    user: "0:0"
+    network_mode: none
+    entrypoint: [sh, /opt/prepare-secrets.sh]
+    volumes:
+      - ${BAOTIN_SECRETS_DIR:?Set external secret source}:/source:ro
+      - runtime-secrets:/target
+      - ./prepare-secrets.sh:/opt/prepare-secrets.sh:ro
+  auth-service:
+    <<: *runtime
+    image: ${AUTH_IMAGE:?Set immutable Auth image}
+    mem_limit: 512m
+    environment:
+      SPRING_CONFIG_IMPORT: configtree:/run/auth-config/
+      DB_URL: jdbc:postgresql://postgres:5432/baotin
+      DB_USER: baotin_auth
+      DB_MIGRATION_ENABLED: "false"
+      JWT_PRIVATE_KEY_PATH: /run/auth-keys/private.pem
+      AUTH_ENCRYPTION_KEY_PATH: /run/auth-keys/encryption.bin
+      JWT_KEY_ID: ${JWT_KEY_ID:?Set same signing key ID as primary runtime}
+      AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:?Set exact Web origins}
+      AUTH_TRUSTED_GATEWAY_CIDRS: ${GATEWAY_IP:?Set reviewed Gateway IP}/32
+      AUTH_EVENTS_ENABLED: "false"
+      FIREBASE_PHONE_ENABLED: "false"
+    volumes:
+      - type: volume
+        source: runtime-secrets
+        target: /run/auth-config
+        read_only: true
+        volume: {subpath: auth-config}
+      - type: volume
+        source: runtime-secrets
+        target: /run/auth-keys
+        read_only: true
+        volume: {subpath: auth-keys}
+    networks:
+      dependencies: {ipv4_address: "${AUTH_IP:?Set reviewed Auth IP}"}
+  api-gateway:
+    <<: *runtime
+    image: ${GATEWAY_IMAGE:?Set immutable Gateway image}
+    environment:
+      SPRING_CONFIG_IMPORT: configtree:/run/gateway-config/
+      AUTH_SERVICE_URI: http://auth-service:8080
+      AUTH_JWKS_URI: http://auth-service:8080/.well-known/jwks.json
+      REDIS_HOST: redis
+      GATEWAY_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS}
+      GATEWAY_TRUSTED_PROXY_CIDRS: ${WEB_IP:?Set reviewed frontend peer}/32
+      THREAT_SERVICE_URI: http://threat-service:8080
+      REPORT_SERVICE_URI: http://report-service:8080
+      REPUTATION_SERVICE_URI: http://reputation-service:8080
+      MODEL_INFERENCE_SERVICE_URI: http://model-inference-service:8080
+      NOTIFICATION_SERVICE_URI: http://notification-service:8080
+      SEARCH_SERVICE_URI: http://search-service:8080
+      CAMPAIGN_SERVICE_URI: http://campaign-service:8080
+      ANALYTICS_SERVICE_URI: http://analytics-service:8080
+    volumes:
+      - type: volume
+        source: runtime-secrets
+        target: /run/gateway-config
+        read_only: true
+        volume: {subpath: gateway-config}
+    depends_on:
+      auth-service: {condition: service_healthy}
+    networks:
+      dependencies: {ipv4_address: "${GATEWAY_IP}"}
+  frontend:
+    <<: *runtime
+    image: ${WEB_IMAGE:?Set immutable web image}
+    mem_limit: 64m
+    ports: ["127.0.0.1:${WEB_PORT:-8095}:8080"]
+    tmpfs: [/tmp, /var/cache/nginx, /var/run]
+    depends_on:
+      api-gateway: {condition: service_healthy}
+    networks:
+      dependencies: {ipv4_address: "${WEB_IP}"}
+  threat-service:
+    <<: *runtime
+    image: ${THREAT_IMAGE:?Set immutable image}
+    networks: {dependencies: {ipv4_address: "${THREAT_IP:?Set reserved service IP}"}}
+  report-service:
+    <<: *runtime
+    image: ${REPORT_IMAGE:?Set immutable image}
+    networks: {dependencies: {ipv4_address: "${REPORT_IP:?Set reserved service IP}"}}
+  reputation-service:
+    <<: *runtime
+    image: ${REPUTATION_IMAGE:?Set immutable image}
+    networks: {dependencies: {ipv4_address: "${REPUTATION_IP:?Set reserved service IP}"}}
+  model-inference-service:
+    <<: *runtime
+    image: ${MODEL_IMAGE:?Set immutable image}
+    networks: {dependencies: {ipv4_address: "${MODEL_IP:?Set reserved service IP}"}}
+  notification-service:
+    <<: *runtime
+    image: ${NOTIFICATION_IMAGE:?Set immutable image}
+    networks: {dependencies: {ipv4_address: "${NOTIFICATION_IP:?Set reserved service IP}"}}
+  search-service:
+    <<: *runtime
+    image: ${SEARCH_IMAGE:?Set immutable image}
+    environment:
+      SPRING_CONFIG_IMPORT: configtree:/run/search/
+      SPRING_FLYWAY_ENABLED: "false"
+      SEARCH_EVENTS_ENABLED: "true"
+    volumes:
+      - ${SEARCH_CONFIG_DIR:?Set external Search runtime config}:/run/search:ro
+    networks: {dependencies: {ipv4_address: "${SEARCH_IP:?Set reserved service IP}"}}
+  campaign-service:
+    <<: *runtime
+    image: ${CAMPAIGN_IMAGE:?Set immutable image}
+    networks: {dependencies: {ipv4_address: "${CAMPAIGN_IP:?Set reserved service IP}"}}
+  analytics-service:
+    <<: *runtime
+    image: ${ANALYTICS_IMAGE:?Set immutable image}
+    networks: {dependencies: {ipv4_address: "${ANALYTICS_IP:?Set reserved service IP}"}}
+networks:
+  dependencies:
+    external: true
+    name: ${DEPENDENCY_NETWORK:?Start dependencies first}
+volumes:
+  runtime-secrets:

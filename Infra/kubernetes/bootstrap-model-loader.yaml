@@ -1,0 +1,40 @@
+# Operator-only example. Edit namespace/claim if changed in bootstrap/config.
+# Apply before the private Deployment rollout, then remove this exact Pod after
+# copying/validating the complete real packages. Never delete the model PVC.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: baotin-model-loader
+  namespace: baotin
+  labels:
+    app.kubernetes.io/part-of: baotin
+spec:
+  serviceAccountName: baotin-deployer
+  automountServiceAccountToken: false
+  restartPolicy: Never
+  activeDeadlineSeconds: 3600
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: copy-window
+      image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+      command: [sh, -c, "sleep 3500"]
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {cpu: 100m, memory: 64Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+      volumeMounts:
+        - {name: models, mountPath: /models}
+  volumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: baotin-models

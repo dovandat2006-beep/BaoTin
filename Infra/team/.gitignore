@@ -1,0 +1,6 @@
+.env
+*.local.json
+release-state.json
+.deploy.lock
+secrets/
+reports/

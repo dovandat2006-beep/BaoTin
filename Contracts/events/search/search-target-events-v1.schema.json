@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/search/search-target-events-v1",
+  "title": "Public DNS-host search projection target event v1",
+  "description": "Additive separate topic baotin.search.targets.v1; no URL path/query/userinfo or raw PII.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "aggregateType",
+    "aggregateId",
+    "correlationId",
+    "causationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "const": "search.target.updated"
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "const": "threat-service"
+    },
+    "aggregateType": {
+      "const": "ThreatTarget"
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "traceId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetId",
+        "targetType",
+        "displayValue"
+      ],
+      "properties": {
+        "targetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "targetType": {
+          "const": "URL"
+        },
+        "displayValue": {
+          "type": "string",
+          "maxLength": 253,
+          "pattern": "^[a-z0-9][a-z0-9.-]*\\.[a-z]{2,63}$"
+        }
+      }
+    }
+  }
+}

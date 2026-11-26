@@ -1,0 +1,378 @@
+openapi: 3.1.0
+info:
+  title: BảoTin Notification Service API
+  version: 1.0.0
+  description: |
+    Public API for device tokens, notification preferences, in-app notifications and
+    URL watchlist. All routes are reached through API-Gateway and require an Auth
+    Service access token. Ownership is always derived from the JWT `sub`; the API
+    never accepts a user id from the client.
+
+    Watchlist URLs are canonicalized server-side (`scheme://host[:port]/path?sorted-query`,
+    default ports and fragments removed, common tracking parameters removed).
+    URLs containing credentials or secret-looking query parameters (`token`,
+    `password`, `otp`, ...) are rejected and never stored. Re-posting an equivalent
+    URL is idempotent. Reputation updates match either the deterministic
+    `urlTargetId` or the canonical hash.
+servers:
+  - url: https://localhost:9444
+    description: Local Gateway
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/notifications:
+    get:
+      operationId: listNotifications
+      summary: List the caller's in-app notifications
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: unread
+          in: query
+          schema: {type: boolean, default: false}
+      responses:
+        "200":
+          description: Newest first
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/NotificationPage"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/notifications/unread-count:
+    get:
+      operationId: unreadNotificationCount
+      summary: Count unread in-app notifications
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UnreadCount"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      summary: Mark every unread notification as read
+      responses:
+        "200":
+          description: Number of rows updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MarkAllResult"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      summary: Mark one notification as read (idempotent)
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": {description: Marked read}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/notifications/{id}:
+    delete:
+      operationId: deleteNotification
+      summary: Delete one own notification
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": {description: Deleted}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/notifications/preferences:
+    get:
+      operationId: getNotificationPreferences
+      summary: Get the caller's preferences (defaults when never saved)
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Preferences"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+    patch:
+      operationId: updateNotificationPreferences
+      summary: Update one or more preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PreferencesPatch"}
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Preferences"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/notifications/devices:
+    get:
+      operationId: listDeviceTokens
+      summary: List own registered devices (provider tokens omitted)
+      responses:
+        "200":
+          description: Devices
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DevicesResponse"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+    post:
+      operationId: registerDeviceToken
+      summary: Register or refresh an FCM device token
+      description: Re-registering the same token for another signed-in user reassigns it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DeviceRequest"}
+      responses:
+        "201":
+          description: Registered device without the provider token
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Device"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/notifications/devices/{id}:
+    delete:
+      operationId: deleteDeviceToken
+      summary: Remove one own device token
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": {description: Removed}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/watchlist:
+    get:
+      operationId: listWatchlist
+      summary: List own watched URLs ordered by last risk update
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: Watchlist
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WatchlistPage"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+    post:
+      operationId: addWatchlistUrl
+      summary: Canonicalize and watch a URL (idempotent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WatchRequest"}
+      responses:
+        "201":
+          description: Created or already watched
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WatchlistItem"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/v1/watchlist/{id}:
+    delete:
+      operationId: removeWatchlistUrl
+      summary: Stop watching a URL
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204": {description: Removed}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/InternalError"}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    Page:
+      name: page
+      in: query
+      schema: {type: integer, minimum: 0, default: 0}
+    Size:
+      name: size
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+  responses:
+    BadRequest:
+      description: Invalid fields, URL or paging
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+    Forbidden:
+      description: Insufficient permission
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+    NotFound:
+      description: Resource does not exist or belongs to another user
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+    InternalError:
+      description: Request could not be completed; no diagnostics exposed
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: {type: string, format: uri}
+        title: {type: string}
+        status: {type: integer}
+        code: {type: string}
+        detail: {type: string}
+        instance: {type: string, format: uri}
+        correlationId: {type: [string, "null"], format: uuid}
+    Notification:
+      type: object
+      required: [id, type, title, body, data, createdAt, read]
+      properties:
+        id: {type: string, format: uuid}
+        type: {type: string, maxLength: 60, examples: [WATCHLIST_RISK_CHANGED]}
+        title: {type: string, maxLength: 200}
+        body: {type: string, maxLength: 1000}
+        data: {type: object, additionalProperties: true}
+        createdAt: {type: string, format: date-time}
+        readAt: {type: [string, "null"], format: date-time}
+        read: {type: boolean}
+    NotificationPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/Notification"}}
+        page: {type: integer}
+        size: {type: integer}
+        totalItems: {type: integer, format: int64}
+        totalPages: {type: integer}
+    UnreadCount:
+      type: object
+      required: [unreadCount]
+      properties:
+        unreadCount: {type: integer, format: int64, minimum: 0}
+    MarkAllResult:
+      type: object
+      required: [updated]
+      properties:
+        updated: {type: integer, minimum: 0}
+    Preferences:
+      type: object
+      required: [riskChangeEnabled, reportStatusEnabled, pushEnabled, inAppEnabled]
+      properties:
+        riskChangeEnabled: {type: boolean}
+        reportStatusEnabled: {type: boolean}
+        pushEnabled: {type: boolean}
+        inAppEnabled: {type: boolean}
+        updatedAt: {type: [string, "null"], format: date-time}
+    PreferencesPatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        riskChangeEnabled: {type: boolean}
+        reportStatusEnabled: {type: boolean}
+        pushEnabled: {type: boolean}
+        inAppEnabled: {type: boolean}
+    DeviceRequest:
+      type: object
+      additionalProperties: false
+      required: [platform, token, deviceId]
+      properties:
+        platform: {type: string, enum: [WEB, ANDROID, IOS]}
+        token: {type: string, minLength: 1, maxLength: 512, writeOnly: true}
+        deviceId: {type: string, minLength: 1, maxLength: 128}
+    Device:
+      type: object
+      required: [id, platform, deviceId, active, createdAt, lastSeenAt]
+      properties:
+        id: {type: string, format: uuid}
+        platform: {type: string, enum: [WEB, ANDROID, IOS]}
+        deviceId: {type: string}
+        active: {type: boolean}
+        createdAt: {type: string, format: date-time}
+        lastSeenAt: {type: string, format: date-time}
+    DevicesResponse:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/Device"}}
+    WatchRequest:
+      type: object
+      additionalProperties: false
+      required: [url]
+      properties:
+        url:
+          type: string
+          minLength: 1
+          maxLength: 4096
+          description: HTTP(S) URL without credentials or secret query parameters; canonicalized server-side.
+    WatchlistItem:
+      type: object
+      required: [id, urlTargetId, url, host, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        urlTargetId: {type: string, format: uuid}
+        url: {type: string, maxLength: 500, description: Canonical URL}
+        host: {type: string}
+        score: {type: [number, "null"], minimum: 0, maximum: 100}
+        previousScore: {type: [number, "null"], minimum: 0, maximum: 100}
+        level: {type: [string, "null"], enum: [LOW, MEDIUM, HIGH, CRITICAL, null]}
+        previousLevel: {type: [string, "null"], enum: [LOW, MEDIUM, HIGH, CRITICAL, null]}
+        label: {type: [string, "null"]}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    WatchlistPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/WatchlistItem"}}
+        page: {type: integer}
+        size: {type: integer}
+        totalItems: {type: integer, format: int64}
+        totalPages: {type: integer}

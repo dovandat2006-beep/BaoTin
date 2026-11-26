@@ -1,0 +1,60 @@
+# Build output
+build/
+out/
+bin/
+.gradle/
+
+# VCS & IDE
+.git/
+.gitignore
+.idea/
+*.iml
+.vscode/
+
+# CI config không cần trong image context
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+docs/
+*.md
+!README.md
+
+# Secrets & env
+.env
+.env.*
+!.env.example
+
+# Test & tooling
+src/test/
+**/*.log
+# Local credentials must never enter a build context
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+**/secrets/
+**/certs/
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore
+**/*.token
+**/*.secret
+**/*.bin
+**/firebase*-service-account*.json
+**/google-services.json
+**/GoogleService-Info.plist
+**/baotin-ci.properties
+**/.git/
+**/.gradle/
+**/build/
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/*.log
+**/hs_err_pid*
+**/replay_pid*
+**/.verification/
+**/.changes/

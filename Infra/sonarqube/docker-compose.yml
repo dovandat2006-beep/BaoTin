@@ -1,0 +1,97 @@
+# =============================================================================
+#  BaoTin — SonarQube (Community) cho quality gate trong Jenkins
+#
+#  Vai trò
+#    - Cung cấp server phân tích tĩnh + quality gate mà pipeline Jenkins gọi tới.
+#    - Container tên `sonarqube` gắn vào network `jenkins` (external) nên
+#      Jenkins controller kết nối được qua http://sonarqube:9000.
+#    - PostgreSQL riêng, KHÔNG publish ra host (yêu cầu bảo mật của workspace).
+#
+#  Ràng buộc kế thừa từ AGENTS.md
+#    - Không recreate container `jenkins-blueocean`; file này không quản lý nó.
+#    - Không publish DB/Redis/internal service. DB của SonarQube là internal.
+#    - Image pin bằng digest; secret chỉ đến từ `.env` (đã gitignore).
+#
+#  Dùng
+#    cd Infra/sonarqube
+#    cp .env.example .env      # điền SONAR_DB_PASSWORD
+#    docker compose up -d
+#    # mở http://localhost:9000 (đăng nhập admin, đổi mật khẩu lần đầu)
+#
+#  LƯU Ý
+#    Community Edition chỉ phân tích được nhánh mặc định (không phân tích
+#    branch/PR). Pipeline BaoTin chỉ gate trên nhánh `main` nên phù hợp.
+# =============================================================================
+
+name: baotin-sonar
+
+services:
+  # ---------------------------------------------------------------------------
+  #  PostgreSQL nội bộ cho SonarQube — chỉ SonarQube truy cập được
+  # ---------------------------------------------------------------------------
+  sonar-db:
+    image: postgres@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    container_name: baotin-sonar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:?Cần set SONAR_DB_PASSWORD trong Infra/sonarqube/.env}
+    volumes:
+      - sonar-db-data:/var/lib/postgresql/data
+    networks:
+      - sonar
+    # KHÔNG có `ports:` — DB không được publish ra host.
+
+  # ---------------------------------------------------------------------------
+  #  SonarQube Community
+  # ---------------------------------------------------------------------------
+  sonarqube:
+    image: sonarqube@sha256:f709975ab31d2d08f5a3ae2dc73a31ee011afc8cf28845082c17c55d45df9df5
+    container_name: sonarqube
+    restart: unless-stopped
+    depends_on:
+      - sonar-db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:?Cần set SONAR_DB_PASSWORD trong Infra/sonarqube/.env}
+      # Giới hạn heap để không tranh chấp RAM với Jenkins/dind trên máy dev.
+      SONAR_WEB_JAVAOPTS: -Xmx768m
+      SONAR_CE_JAVAOPTS: -Xmx768m
+      SONAR_SEARCH_JAVAOPTS: -Xms512m -Xmx512m
+    ports:
+      # Chỉ mở trên loopback: người vận hành xem UI qua localhost:9000;
+      # pipeline kết nối qua network `jenkins` bằng tên `sonarqube`.
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - sonar-data:/opt/sonarqube/data
+      - sonar-extensions:/opt/sonarqube/extensions
+      - sonar-logs:/opt/sonarqube/logs
+    networks:
+      - sonar
+      - jenkins
+    # Elasticsearch đi kèm SonarQube cần vm.max_map_count >= 262144.
+    # Docker Desktop (WSL2) hiện đã đặt sẵn giá trị này; nếu container
+    # bootstrap lỗi, chạy: wsl -d docker-desktop sysctl -w vm.max_map_count=524288
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+volumes:
+  sonar-db-data:
+    name: baotin-sonar-db-data
+  sonar-data:
+    name: baotin-sonar-data
+  sonar-extensions:
+    name: baotin-sonar-extensions
+  sonar-logs:
+    name: baotin-sonar-logs
+
+networks:
+  sonar:
+    name: baotin-sonar
+  # `jenkins` là network có sẵn mà jenkins-blueocean + dind đang dùng.
+  jenkins:
+    external: true

@@ -1,0 +1,76 @@
+rule_files: [alerts.yml]
+evaluation_interval: 30s
+tests:
+  - interval: 30s
+    input_series:
+      - series: 'probe_success{job="service-readiness",service="fixture",instance="fixture"}'
+        values: '1 0 0 0 0 0 1 1'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: BaoTinServiceNotReady
+        exp_alerts: []
+      - eval_time: 2m30s
+        alertname: BaoTinServiceNotReady
+        exp_alerts:
+          - exp_labels: {job: service-readiness, service: fixture, instance: fixture, severity: critical}
+            exp_annotations:
+              summary: fixture is not ready
+              description: 'Check the owned runtime and its dependencies; do not restart unrelated processes.'
+      - eval_time: 3m
+        alertname: BaoTinServiceNotReady
+        exp_alerts: []
+  - interval: 30s
+    input_series:
+      - series: 'probe_success{job="website-https",service="public-website"}'
+        values: '0+0x5'
+      - series: 'up{job="blackbox",instance="exporter"}'
+        values: '0+0x5'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: BaoTinWebsiteUnavailable
+        exp_alerts:
+          - exp_labels: {job: website-https, service: public-website, severity: critical}
+            exp_annotations:
+              summary: BaoTin public HTTPS website probe failed
+              description: Compare local expo-web readiness with public edge/TLS status.
+      - eval_time: 2m
+        alertname: BaoTinMonitoringTargetDown
+        exp_alerts:
+          - exp_labels: {job: blackbox, instance: exporter, severity: critical}
+            exp_annotations:
+              summary: 'Monitoring scrape failed: blackbox'
+  - interval: 30s
+    input_series:
+      - series: 'probe_ssl_earliest_cert_expiry{job="website-https",service="public-website"}'
+        values: '604800+0x21'
+      - series: 'probe_ssl_earliest_cert_expiry{job="website-https",service="healthy-certificate"}'
+        values: '2592000+0x21'
+    alert_rule_test:
+      - eval_time: 9m30s
+        alertname: BaoTinTlsCertificateExpiring
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: BaoTinTlsCertificateExpiring
+        exp_alerts:
+          - exp_labels: {job: website-https, service: public-website, severity: warning}
+            exp_annotations:
+              summary: BaoTin HTTPS certificate expires in less than 14 days
+  - interval: 30s
+    input_series:
+      - series: 'probe_duration_seconds{job="service-readiness",service="slow-fixture"}'
+        values: '4+0x10 1 1'
+      - series: 'probe_duration_seconds{job="service-readiness",service="threshold-fixture"}'
+        values: '3+0x12'
+    alert_rule_test:
+      - eval_time: 4m30s
+        alertname: BaoTinSlowProbe
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: BaoTinSlowProbe
+        exp_alerts:
+          - exp_labels: {job: service-readiness, service: slow-fixture, severity: warning}
+            exp_annotations:
+              summary: Probe for slow-fixture takes more than 3 seconds
+      - eval_time: 5m30s
+        alertname: BaoTinSlowProbe
+        exp_alerts: []

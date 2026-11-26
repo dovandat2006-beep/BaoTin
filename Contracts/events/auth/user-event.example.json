@@ -1,0 +1,17 @@
+{
+  "eventId": "0b659827-9d64-4c50-a53c-49a0a2020815",
+  "eventType": "user.created",
+  "eventVersion": 1,
+  "occurredAt": "2026-10-05T10:00:00Z",
+  "producer": "auth-service",
+  "aggregateType": "User",
+  "aggregateId": "51c826dd-4033-440a-9d48-81017899fb6f",
+  "correlationId": "0b659827-9d64-4c50-a53c-49a0a2020815",
+  "causationId": null,
+  "payload": {
+    "userId": "51c826dd-4033-440a-9d48-81017899fb6f",
+    "status": "ACTIVE",
+    "role": "USER",
+    "securityVersion": 0
+  }
+}

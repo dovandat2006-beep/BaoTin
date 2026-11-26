@@ -1,0 +1,44 @@
+[
+  {
+    "Skill": "tailwind-design-system",
+    "Files": 2,
+    "HashMismatches": 0,
+    "SkillMd": true
+  },
+  {
+    "Skill": "hallmark",
+    "Files": 107,
+    "HashMismatches": 0,
+    "SkillMd": true
+  },
+  {
+    "Skill": "high-end-visual-design",
+    "Files": 1,
+    "HashMismatches": 0,
+    "SkillMd": true
+  },
+  {
+    "Skill": "design-taste-frontend",
+    "Files": 1,
+    "HashMismatches": 0,
+    "SkillMd": true
+  },
+  {
+    "Skill": "gpt-taste",
+    "Files": 1,
+    "HashMismatches": 0,
+    "SkillMd": true
+  },
+  {
+    "Skill": "graphify",
+    "Files": 10,
+    "HashMismatches": 0,
+    "SkillMd": true
+  },
+  {
+    "Skill": "caveman",
+    "Files": 2,
+    "HashMismatches": 0,
+    "SkillMd": true
+  }
+]

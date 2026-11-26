@@ -1,0 +1,20 @@
+modules:
+  readiness:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      preferred_ip_protocol: ip4
+      valid_status_codes: [200]
+      # Check the top-level JSON status, not an unrelated nested component.
+      fail_if_body_json_not_matches_cel: 'body.status == "UP"'
+  website:
+    prober: http
+    timeout: 10s
+    http:
+      method: GET
+      preferred_ip_protocol: ip4
+      valid_status_codes: [200]
+      fail_if_not_ssl: true
+      fail_if_body_not_matches_regexp:
+        - '(?i)<!doctype html|<html'

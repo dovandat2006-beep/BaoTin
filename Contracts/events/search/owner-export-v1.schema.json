@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/search/owner-export-v1",
+  "title": "Read-only complete owning public Search export",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "source",
+    "snapshotAt",
+    "complete",
+    "records",
+    "dataFile",
+    "sha256"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "source": {
+      "enum": [
+        "threat-service",
+        "reputation-service",
+        "campaign-service"
+      ]
+    },
+    "snapshotAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "complete": {
+      "const": true
+    },
+    "records": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "dataFile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

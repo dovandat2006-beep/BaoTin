@@ -1,0 +1,14 @@
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.token
+*.secret
+*.log
+secrets/
+__pycache__/
+.hf_cache/
+.torch_cache/
+.git/

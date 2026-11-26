@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/search/publication-v1",
+  "title": "Owner-approved public Search snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "visibility"
+  ],
+  "properties": {
+    "visibility": {
+      "enum": [
+        "PUBLIC",
+        "PRIVATE"
+      ]
+    },
+    "documentType": {
+      "enum": [
+        "URL",
+        "PHONE",
+        "BANK_ACCOUNT",
+        "EMAIL",
+        "CAMPAIGN",
+        "OTHER"
+      ]
+    },
+    "referenceId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253
+    },
+    "displayValue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253
+    },
+    "status": {
+      "enum": [
+        "ACTIVE",
+        "REMOVED"
+      ]
+    },
+    "lookupHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "campaignId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "bankCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "pattern": "^[A-Z]{1,20}$"
+        },
+        "referenceType": {
+          "enum": [
+            "URL",
+            "PHONE",
+            "BANK_ACCOUNT",
+            "EMAIL",
+            "CAMPAIGN",
+            "OTHER",
+            "MESSAGE_TEMPLATE"
+          ]
+        },
+        "contentWarning": {
+          "enum": [
+            "SUSPICIOUS",
+            "UNKNOWN",
+            "BENIGN"
+          ]
+        }
+      }
+    },
+    "content": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000,
+      "description": "Automatically masked message wording only; sensitive values become ***."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "visibility": {
+            "const": "PUBLIC"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "documentType",
+          "referenceId",
+          "status"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "visibility": {
+            "const": "PUBLIC"
+          },
+          "status": {
+            "const": "ACTIVE"
+          }
+        },
+        "required": [
+          "visibility",
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "title",
+          "displayValue",
+          "metadata"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "visibility": {
+            "const": "PUBLIC"
+          },
+          "status": {
+            "const": "ACTIVE"
+          },
+          "documentType": {
+            "enum": [
+              "PHONE",
+              "BANK_ACCOUNT",
+              "EMAIL"
+            ]
+          }
+        },
+        "required": [
+          "visibility",
+          "status",
+          "documentType"
+        ]
+      },
+      "then": {
+        "required": [
+          "lookupHash"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "documentType": {
+            "const": "CAMPAIGN"
+          }
+        },
+        "required": [
+          "documentType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "title": {
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "documentType": {
+            "const": "PHONE"
+          }
+        },
+        "required": [
+          "documentType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "title": {
+            "const": "Điện thoại"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "documentType": {
+            "const": "BANK_ACCOUNT"
+          }
+        },
+        "required": [
+          "documentType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "title": {
+            "const": "Tài khoản ngân hàng"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "documentType": {
+            "const": "EMAIL"
+          }
+        },
+        "required": [
+          "documentType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "title": {
+            "const": "Email"
+          }
+        }
+      }
+    }
+  ]
+}

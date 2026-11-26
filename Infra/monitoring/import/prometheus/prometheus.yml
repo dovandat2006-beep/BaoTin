@@ -1,0 +1,98 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    application: baotin
+    environment: primary-windows
+rule_files:
+  - alerts.yml
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['127.0.0.1:9090']
+  - job_name: blackbox
+    static_configs:
+      - targets: ['127.0.0.1:9115']
+  - job_name: service-readiness
+    metrics_path: /probe
+    params:
+      module: [readiness]
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['http://127.0.0.1:8090/actuator/health/readiness']
+        labels: {service: api-gateway}
+      - targets: ['http://127.0.0.1:8181/actuator/health/readiness']
+        labels: {service: auth-service}
+      - targets: ['http://127.0.0.1:8182/actuator/health/readiness']
+        labels: {service: threat-service}
+      - targets: ['http://127.0.0.1:8183/actuator/health/readiness']
+        labels: {service: report-service}
+      - targets: ['http://127.0.0.1:8184/actuator/health/readiness']
+        labels: {service: reputation-service}
+      - targets: ['http://127.0.0.1:8185/actuator/health/readiness']
+        labels: {service: model-inference-service}
+      - targets: ['http://127.0.0.1:8186/actuator/health/readiness']
+        labels: {service: notification-service}
+      - targets: ['http://127.0.0.1:8187/actuator/health/readiness']
+        labels: {service: search-service}
+      - targets: ['http://127.0.0.1:8188/actuator/health/readiness']
+        labels: {service: campaign-service}
+      - targets: ['http://127.0.0.1:8189/actuator/health/readiness']
+        labels: {service: analytics-service}
+      - targets: ['http://127.0.0.1:8091/healthz']
+        labels: {service: expo-web}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: '127.0.0.1:9115'
+  - job_name: website-https
+    metrics_path: /probe
+    params:
+      module: [website]
+    scrape_timeout: 15s
+    static_configs:
+      - targets: ['https://baotin.rimiprod.me/']
+        labels: {service: public-website}
+      - targets: ['https://prometheus.rimiprod.me/login']
+        labels: {service: public-grafana}
+      - targets: ['https://sonarqube.rimiprod.me/sessions/new']
+        labels: {service: public-sonarqube}
+      - targets: ['https://jenkins.rimiprod.me/login']
+        labels: {service: public-jenkins}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: '127.0.0.1:9115'
+  - job_name: supporting-services
+    metrics_path: /probe
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['http://127.0.0.1:9001/api/system/status']
+        labels: {service: sonarqube, module: readiness}
+      - targets: ['http://127.0.0.1:8081/login']
+        labels: {service: jenkins, module: http_2xx}
+      - targets: ['http://127.0.0.1:11900/minio/health/ready']
+        labels: {service: minio, module: http_2xx}
+      - targets: ['http://127.0.0.1:3000/api/health']
+        labels: {service: grafana, module: grafana_health}
+      - targets: ['127.0.0.1:15432']
+        labels: {service: postgres, module: tcp_connect}
+      - targets: ['127.0.0.1:16379']
+        labels: {service: redis, module: tcp_connect}
+      - targets: ['127.0.0.1:19092']
+        labels: {service: kafka, module: tcp_connect}
+    relabel_configs:
+      - source_labels: [module]
+        target_label: __param_module
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: '127.0.0.1:9115'

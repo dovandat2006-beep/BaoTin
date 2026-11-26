@@ -1,0 +1,10 @@
+{
+  "date": "2026-11-16",
+  "framework": "Expo SDK58 / React Native 0.88.1",
+  "font": "Roboto 400/500/600/700",
+  "palette": "DESIGN.md Material 3 roles in color-tokens.json; legacy aliases retained",
+  "icons": "Font Awesome",
+  "motion": "No decorative route/result animation; shared reduced-motion sheet behavior retained",
+  "scope": "18 named app targets; explicit demo/legacy/Auth screens excluded",
+  "verification": "Web matrices and native Hermes exports; no attached Android device/emulator and no iOS simulator on Windows"
+}

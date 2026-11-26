@@ -1,0 +1,27 @@
+DELIVERABLE: user-importable Grafana dashboard and optional Prometheus configuration; no authentication required to create these files.
+Dashboard: BaoTin-Operations-Grafana.json
+UID: baotin-operations (does not overwrite baotin-overview on first import)
+Schema39, selectable Prometheus datasource via __inputs DS_PROMETHEUS, editable=true,12 data panels,4 section rows,30second refresh,6hour default range.
+No password/token/cookie/env/private key/DB dump included. Current user password was not read, changed or reset for this artifact task.
+
+Validation command (cwd M:/BaoTin):
+python M:/BaoTin/.changes/monitoring-dashboard-20261118/Verify-ImportFiles.py
+Literal output:
+PASS importJSON=VALID panels=12 sections=4 selectableDatasource=YES targetConfig=24 probeConfig=22 passwordFiles=NONE
+PASS PromQL=12/12 syntax valid; current live-series counts=[11, 0, 1, 1, 12, 12, 12, 12, 14, 0, 2, 2]
+PASS existingSourceConfigRestored=YES noRuntimeApply=YES
+Exit0.
+Interpretation: the supporting-services panel currently has0 live series because the extra scrape config is intentionally NOT applied. Active-alert panel0 rows is normal if no alerts fire. Extra public login-domain series will populate only after the user applies the bundled configuration. These data gaps are explicitly documented, never rendered as healthy values.
+
+Prometheus validation command:
+L:/BaoTin-monitoring/bin/prometheus-3.16.0.windows-amd64/promtool.exe check config M:/BaoTin/Infra/monitoring/import/prometheus/prometheus.yml
+Result: SUCCESS valid config,1 rule file,6 rules. Exit0.
+Rule validation command:
+L:/BaoTin-monitoring/bin/prometheus-3.16.0.windows-amd64/promtool.exe test rules M:/BaoTin/Infra/monitoring/import/prometheus/alerts.test.yml
+Literal output: Processing test file: M:/BaoTin/Infra/monitoring/import/prometheus/alerts.test.yml ; SUCCESS
+Exit0. All6 rule names covered including supporting-service pending/firing/recovery.
+
+Runtime/service passwords and existing runtime configuration remain unchanged; earlier un-applied draft source edits restored to originals. Only distributable files are added. No service restart, new process, package installation or temporary dependency cache created. Source/rollback evidence retained.
+User must perform Grafana import and select datasource while authenticated. No assertion is made that the file has already been imported into the user's organization or rendered in their browser. Optional Prometheus config must be applied separately to obtain24 scrape targets/22 probes. Current live config remains14 scrape targets/12 probes.
+
+Independent handoff audit: python M:/BaoTin/.changes/monitoring-dashboard-20261118/Verify-IsolatedPackage.py; exit0. Real Blackbox loaded bundled modules on an ephemeral loopback port;22/22 configured probes succeeded (11 app/web,4 HTTPS,7 supporting). Fixture exporter stopped by exact subprocess handle. No runtime config or credential accessed/changed. Included Test-Package.ps1 validates checksums/JSON and optional promtool without login or changing services. Developer-only build-dashboard.py stays in source and is not part of the distributable ZIP; users do not need the source workspace to import or verify.

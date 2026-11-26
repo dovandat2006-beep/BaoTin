@@ -1,0 +1,33 @@
+# HuggingFace / Torch cache
+.hf_cache/
+.torch_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Releases / Archives
+releases/
+*.zip
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.token
+*.secret
+*.log
+secrets/
+__pycache__/
+.hf_cache/
+.torch_cache/
+.git/

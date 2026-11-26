@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./tests/security-quality',workers:2,outputDir:'.redesign-artifacts/account-security-20261116/results',use:{baseURL:'http://127.0.0.1:4194'},projects:[320,375,414,768,1024,1440].flatMap(width=>(['light','dark'] as const).map(colorScheme=>({name:`${width}-${colorScheme}`,use:{viewport:{width,height:1000},colorScheme}})))});

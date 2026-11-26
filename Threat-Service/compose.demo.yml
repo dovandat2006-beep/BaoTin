@@ -1,0 +1,115 @@
+name: baotin-scan-demo
+services:
+  postgres:
+    image: postgres:16.6-alpine@sha256:1d04b9ba1d4996401f2552b51beda8187f175c0645c091e4781134fc9c9a3eef
+    environment:
+      POSTGRES_DB: baotin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run ops/create-demo-env.py}
+      THREAT_DB_PASSWORD: ${THREAT_DB_PASSWORD:?Run ops/create-demo-env.py}
+      THREAT_MIGRATION_PASSWORD: ${THREAT_MIGRATION_PASSWORD:?Run ops/create-demo-env.py}
+    volumes:
+      - scan-db:/var/lib/postgresql/data
+      - ./ops/init-demo-db.sql:/docker-entrypoint-initdb.d/10-threat.sql:ro
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d baotin"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine@sha256:892022f9f18c26c92c30e15194d132f90044af87b94a491a75429bbc3982eab1
+    networks: [backend]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  migrate:
+    image: baotin-threat:scan-demo
+    build: .
+    entrypoint: [java]
+    command: [-Dloader.main=com.baotin.threat.operator.DatabaseMigration, -cp, /app/app.jar, org.springframework.boot.loader.launch.PropertiesLauncher]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/baotin
+      DB_MIGRATION_USER: baotin_threat_migrator
+      DB_MIGRATION_PASSWORD: ${THREAT_MIGRATION_PASSWORD}
+      DB_RUNTIME_USER: baotin_threat
+    networks: [backend]
+    depends_on:
+      postgres: {condition: service_healthy}
+  model-inference-service:
+    build: ../Model-Inference-Service
+    image: baotin-model-inference:scan-demo
+    environment:
+      MODEL_SERVICE_TOKEN: ${MODEL_SERVICE_TOKEN:?Run ops/create-demo-env.py}
+      MODEL_TEXT_PATH: ${MODEL_TEXT_PATH:-}
+      MODEL_URL_PATH: ${MODEL_URL_PATH:-}
+    # Default AI checkout exists but contains no weights. Set an external artifact parent when available.
+    volumes:
+      - ${BAOTIN_MODEL_DIR:-../AI}:/models:ro
+    networks: [backend]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  threat-service:
+    image: baotin-threat:scan-demo
+    build: .
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/baotin
+      DB_USER: baotin_threat
+      DB_PASSWORD: ${THREAT_DB_PASSWORD}
+      DB_MIGRATION_ENABLED: "false"
+      THREAT_HASH_KEY: ${THREAT_HASH_KEY:?Run ops/create-demo-env.py}
+      REPORT_THREAT_SERVICE_TOKEN: ${REPORT_THREAT_SERVICE_TOKEN:?Regenerate or extend private demo env for report integration}
+      MODEL_INFERENCE_SERVICE_URI: http://model-inference-service:8080
+      MODEL_SERVICE_TOKEN: ${MODEL_SERVICE_TOKEN}
+      AUTH_JWKS_URI: ${AUTH_JWKS_URI:-http://auth-service:8080/.well-known/jwks.json}
+      JWT_ISSUER: ${JWT_ISSUER:-baotin-auth}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-baotin-api}
+      THREAT_EVENTS_ENABLED: "false"
+    networks: [backend]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      model-inference-service: {condition: service_started}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  api-gateway:
+    build: ../API-Gateway
+    image: baotin-gateway:scan-demo
+    environment:
+      THREAT_SERVICE_URI: http://threat-service:8080
+      AUTH_SERVICE_URI: ${AUTH_SERVICE_URI:-http://auth-service:8080}
+      AUTH_JWKS_URI: ${AUTH_JWKS_URI:-http://auth-service:8080/.well-known/jwks.json}
+      REDIS_HOST: redis
+      GATEWAY_ALLOWED_ORIGINS: http://localhost:${SCAN_DEMO_PORT:-8096}
+    networks: [backend]
+    depends_on:
+      threat-service: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  frontend:
+    build:
+      context: ../Frontend
+      args:
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-}
+    image: baotin-frontend:scan-demo
+    ports: ["127.0.0.1:${SCAN_DEMO_PORT:-8096}:8080"]
+    networks: [backend, edge]
+    depends_on:
+      api-gateway: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp, /var/cache/nginx, /var/run]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+networks:
+  backend: {internal: true}
+  edge: {}
+volumes:
+  scan-db:

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baotin.example/contracts/reputation/reputation-events-v1",
+  "title": "BaoTin reputation score changed event envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "aggregateType",
+    "aggregateId",
+    "correlationId",
+    "causationId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "const": "reputation.score.changed"
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "const": "reputation-service"
+    },
+    "aggregateType": {
+      "const": "ThreatTarget"
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "traceId": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "threatTargetId",
+        "targetType",
+        "oldScore",
+        "newScore",
+        "oldLevel",
+        "newLevel",
+        "confidence",
+        "components",
+        "calculationVersion",
+        "changedAt",
+        "reason"
+      ],
+      "properties": {
+        "threatTargetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "targetType": {
+          "type": "string",
+          "enum": ["URL", "PHONE", "BANK_ACCOUNT", "EMAIL", "OTHER"]
+        },
+        "oldScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "newScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "oldLevel": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        },
+        "newLevel": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reportSignal", "ruleSignal", "aiSignal", "campaignSignal"],
+          "properties": {
+            "reportSignal": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "ruleSignal": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "aiSignal": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "campaignSignal": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "calculationVersion": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "changedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    }
+  }
+}

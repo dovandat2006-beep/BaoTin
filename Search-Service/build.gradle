@@ -1,0 +1,87 @@
+plugins {
+	id 'java'
+	id 'jacoco'
+	id 'org.sonarqube' version '7.5.0.8588'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.baotin'
+version = '0.0.1-SNAPSHOT'
+description = 'BaoTin Search-Service'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+// Security patches aligned with the verified Auth/Gateway Boot 4.1.1 build.
+ext['jackson-2-bom.version'] = '2.21.7'
+ext['jackson-bom.version'] = '3.1.7'
+ext['tomcat.version'] = '11.0.25'
+
+dependencies {
+    constraints {
+        // Match the already-reviewed packaged Kafka security patches in sibling services.
+        implementation 'org.xerial.snappy:snappy-java:1.1.10.9'
+        implementation 'at.yawk.lz4:lz4-java:1.11.4'
+    }
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+	implementation 'org.flywaydb:flyway-database-postgresql'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-kafka'
+	runtimeOnly 'org.postgresql:postgresql'
+	testImplementation 'org.testcontainers:postgresql:1.21.3'
+	testImplementation 'org.testcontainers:kafka:1.21.3'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// --- CI quality gate (SonarQube + JaCoCo) -----------------------------------
+// Added so Jenkins can analyse the reviewed revision and enforce the server-side
+// quality gate. Lane release không chạy test nên phân tích CI không có coverage;
+// jacoco giữ lại để máy dev vẫn sinh được report coverage khi cần.
+jacoco {
+	toolVersion = '0.8.13'
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn tasks.named('test')
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
+}
+
+sonar {
+	properties {
+		property 'sonar.host.url', System.getenv('SONAR_HOST_URL') ?: 'http://sonarqube:9000'
+		property 'sonar.projectKey', 'baotin_' + rootProject.name.toLowerCase()
+		property 'sonar.projectName', rootProject.name
+		property 'sonar.sourceEncoding', 'UTF-8'
+		property 'sonar.exclusions', '**/build/**'
+	}
+}
+
+// Operator CLI integration tests execute the actual packaged candidate, not a mock main.
+tasks.named('test') {
+    dependsOn tasks.named('bootJar')
+    doFirst { systemProperty 'search.operator.jar', tasks.named('bootJar').get().archiveFile.get().asFile.absolutePath }
+}

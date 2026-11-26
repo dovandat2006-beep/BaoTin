@@ -1,0 +1,817 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BaoTin Analytics API",
+    "version": "0.2.0",
+    "description": "BaoTin admin analytics API for the moderation dashboard: summary KPIs, moderation queue listing, queue counts and daily historical trends. For live moderation operations (/summary, /queue, /counts), the service composes role-checked read-through models from Report-Service (GET /internal/v1/analytics/moderation) and aggregate scan counters from Threat-Service (GET /api/v1/scans/admin/stats), enriched fail-open with event-backed target riskLevel (returning null when unknown or unavailable). In Phase 2, Analytics-Service also consumes baotin.scan.events.v1, baotin.report.events.v1 and baotin.reputation.events.v1 into local PostgreSQL projections (analytics.daily_metrics) powering GET /api/v1/analytics/admin/trends. It does not persist report bodies, evidence, raw messages, reporter identity or scan identity. All endpoints require an authenticated admin/moderator session; authorization is enforced at the edge and again in the service from the JWT roles claim.",
+    "license": {
+      "name": "Proprietary",
+      "url": "https://baotin.example/license"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://{gatewayHost}:9443",
+      "variables": {
+        "gatewayHost": {
+          "default": "baotin.tailnet.ts.net",
+          "description": "Replace with the verified tailnet hostname before deployment"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/analytics/admin/summary": {
+      "get": {
+        "operationId": "get__api_v1_analytics_admin_summary",
+        "summary": "/api/v1/analytics/admin/summary",
+        "description": "ADMIN or MODERATOR required. Returns the dashboard headline KPIs in a single call.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid authentication",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A required upstream read model is unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/admin/queue": {
+      "get": {
+        "operationId": "get__api_v1_analytics_admin_queue",
+        "summary": "/api/v1/analytics/admin/queue",
+        "description": "ADMIN or MODERATOR required. Paginated moderation queue with optional status/priority filters.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 10000
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by one moderation status.",
+            "schema": {
+              "$ref": "#/components/schemas/ModerationStatus"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "description": "Filter by one priority.",
+            "schema": {
+              "$ref": "#/components/schemas/Priority"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Stable submitted-time ordering.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "submittedAt,asc",
+                "submittedAt,desc"
+              ],
+              "default": "submittedAt,desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueuePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid authentication",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A required upstream read model is unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/admin/counts": {
+      "get": {
+        "operationId": "get__api_v1_analytics_admin_counts",
+        "summary": "/api/v1/analytics/admin/counts",
+        "description": "ADMIN or MODERATOR required. Queue counts grouped by moderation status and by priority.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueCounts"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid authentication",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A required upstream read model is unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/admin/trends": {
+      "get": {
+        "operationId": "get__api_v1_analytics_admin_trends",
+        "summary": "/api/v1/analytics/admin/trends",
+        "description": "ADMIN or MODERATOR required. Daily scan, report and new-threat trends plus scan risk breakdown over a bounded UTC day window from the local Analytics projection.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of UTC days ending today (inclusive) to include in the trend window.",
+            "schema": {
+              "type": "integer",
+              "default": 14,
+              "minimum": 1,
+              "maximum": 90
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Correlation-Id": {
+                "description": "Request correlation UUID",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsTrends"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "headers": {
+              "X-Correlation-Id": {
+                "description": "Request correlation UUID",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid authentication",
+            "headers": {
+              "X-Correlation-Id": {
+                "description": "Request correlation UUID",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role required",
+            "headers": {
+              "X-Correlation-Id": {
+                "description": "Request correlation UUID",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "headers": {
+              "X-Correlation-Id": {
+                "description": "Request correlation UUID",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ModerationStatus": {
+        "type": "string",
+        "enum": [
+          "SUBMITTED",
+          "PENDING_REVIEW",
+          "NEED_MORE_INFO",
+          "VERIFIED",
+          "REJECTED"
+        ]
+      },
+      "Priority": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH"
+        ]
+      },
+      "RiskLevel": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      },
+      "QueueItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "targetType",
+          "target",
+          "category",
+          "title",
+          "status",
+          "riskLevel",
+          "priority",
+          "submittedAt",
+          "evidenceCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ModerationStatus"
+          },
+          "riskLevel": {
+            "description": "Current target reputation level from event-backed reputation cache, or null when a target has no reputation record or optional lookup is unavailable; clients must not render null as LOW.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RiskLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "$ref": "#/components/schemas/Priority"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidenceCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "moderatorNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "QueuePage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "size",
+          "totalItems",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueueItem"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "QueueCounts": {
+        "type": "object",
+        "required": [
+          "byStatus",
+          "byPriority"
+        ],
+        "properties": {
+          "byStatus": {
+            "type": "object",
+            "required": [
+              "SUBMITTED",
+              "PENDING_REVIEW",
+              "NEED_MORE_INFO",
+              "VERIFIED",
+              "REJECTED"
+            ],
+            "properties": {
+              "SUBMITTED": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "PENDING_REVIEW": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "NEED_MORE_INFO": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "VERIFIED": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "REJECTED": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "byPriority": {
+            "type": "object",
+            "required": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "properties": {
+              "LOW": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "MEDIUM": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "HIGH": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "AdminSummary": {
+        "type": "object",
+        "required": [
+          "pendingReview",
+          "needMoreInfo",
+          "resolvedToday",
+          "highRisk",
+          "scansToday"
+        ],
+        "properties": {
+          "pendingReview": {
+            "description": "Reports in SUBMITTED or PENDING_REVIEW.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "needMoreInfo": {
+            "description": "Reports in NEED_MORE_INFO.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "resolvedToday": {
+            "description": "VERIFIED or REJECTED reports reviewed during the current UTC day.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "highRisk": {
+            "description": "HIGH or CRITICAL scans during the current UTC day, including guest scans counted without retaining scan identity or raw content.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "scansToday": {
+            "description": "All scans during the current UTC day, including guest scans counted without retaining scan identity or raw content.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AnalyticsTrends": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "days",
+          "fromDate",
+          "toDate",
+          "totals",
+          "riskBreakdown",
+          "series"
+        ],
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "fromDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "toDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TrendTotals"
+          },
+          "riskBreakdown": {
+            "$ref": "#/components/schemas/RiskBreakdown"
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyTrendPoint"
+            }
+          }
+        }
+      },
+      "TrendTotals": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "totalScans",
+          "textScans",
+          "urlScans",
+          "highRiskScans",
+          "reportsCreated",
+          "reportsVerified",
+          "reportsRejected",
+          "reportsNeedMoreInfo",
+          "newThreats"
+        ],
+        "properties": {
+          "totalScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "textScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "urlScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "highRiskScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsCreated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsVerified": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsRejected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsNeedMoreInfo": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "newThreats": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "DailyTrendPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "totalScans",
+          "textScans",
+          "urlScans",
+          "highRiskScans",
+          "reportsCreated",
+          "reportsVerified",
+          "reportsRejected",
+          "reportsNeedMoreInfo",
+          "newThreats"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "totalScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "textScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "urlScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "highRiskScans": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsCreated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsVerified": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsRejected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reportsNeedMoreInfo": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "newThreats": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "RiskBreakdown": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ],
+        "properties": {
+          "LOW": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "MEDIUM": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "HIGH": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "CRITICAL": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "labels": [
+    "HAM",
+    "SPAM"
+  ],
+  "benignClassIds": [
+    0
+  ]
+}

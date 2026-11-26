@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "images": {
+    "AUTH_IMAGE": "ghcr.io/vietluccuu/auth-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "GATEWAY_IMAGE": "ghcr.io/vietluccuu/api-gateway@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "WEB_IMAGE": "ghcr.io/vietluccuu/frontend@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "THREAT_IMAGE": "ghcr.io/vietluccuu/threat-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "REPORT_IMAGE": "ghcr.io/vietluccuu/report-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "REPUTATION_IMAGE": "ghcr.io/vietluccuu/reputation-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "MODEL_IMAGE": "ghcr.io/vietluccuu/model-inference-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "NOTIFICATION_IMAGE": "ghcr.io/vietluccuu/notification-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "SEARCH_IMAGE": "ghcr.io/vietluccuu/search-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "CAMPAIGN_IMAGE": "ghcr.io/vietluccuu/campaign-service@sha256:REPLACE_WITH_SCANNED_DIGEST",
+    "ANALYTICS_IMAGE": "ghcr.io/vietluccuu/analytics-service@sha256:REPLACE_WITH_SCANNED_DIGEST"
+  }
+}

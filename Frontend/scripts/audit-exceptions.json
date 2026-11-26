@@ -1,0 +1,16 @@
+[
+  {
+    "package": "braces",
+    "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+    "range": "<=3.0.3",
+    "expires": "2026-11-19T00:00:00Z",
+    "reason": "User approved temporary CI exception on 2026-10-20; no upstream patch released. Build tooling only; review and remove after patch."
+  },
+  {
+    "package": "node-forge",
+    "advisory": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
+    "range": "<=1.4.0",
+    "expires": "2026-11-19T00:00:00Z",
+    "reason": "User approved temporary CI exception on 2026-10-20; no upstream patch released. Expo tooling only; review and remove after patch."
+  }
+]

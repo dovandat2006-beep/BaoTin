@@ -1,0 +1,63 @@
+// Web is the primary frontend target; native source remains in the same Expo repo.
+pipeline {
+    agent { label 'baotin-docker' }
+    options { timestamps(); disableConcurrentBuilds(); timeout(time: 45, unit: 'MINUTES') }
+    parameters {
+        booleanParam(name: 'BUILD_DOCKER_IMAGE', defaultValue: false, description: 'Alternative Docker web image, not the primary deployment')
+        string(name: 'PUBLIC_API_ORIGIN', defaultValue: 'https://baotin.rimiprod.me', description: 'Exact public HTTPS API-Gateway origin baked into the release; no service/private origin')
+        string(name: 'ANDROID_DOWNLOAD_ID', defaultValue: 'e4c7bf859ec4c2c18b453e33be309ef3f83fb7963e75f495b69aa71ba2eb09e0', description: 'Reviewed Android source SHA256, independent of the web revision; empty explicitly omits the APK')
+    }
+    environment { IMAGE = 'ghcr.io/vietluccuu/frontend' }
+    stages {
+        stage('Trusted checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.REVISION = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    if (params.ANDROID_DOWNLOAD_ID && !(params.ANDROID_DOWNLOAD_ID ==~ /^[a-f0-9]{64}$/)) { error('Invalid Android source snapshot ID') }
+                    if (env.CHANGE_ID || sh(script: 'test "$(git rev-parse HEAD)" = "$(git rev-parse refs/remotes/origin/main)"', returnStatus: true) != 0) {
+                        error('Protected main source required before release')
+                    }
+                }
+            }
+        }
+        stage('Source secret gate') {
+            steps { sh 'sh ci/security-gates.sh' }
+            post { always { archiveArtifacts artifacts: 'build/security/*.json', allowEmptyArchive: false } }
+        }
+        stage('SonarQube quality gate') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh 'sh ci/sonar-quality-gate.sh'
+                }
+            }
+            post { always { archiveArtifacts artifacts: 'build/sonar/**', allowEmptyArchive: true, fingerprint: true } }
+        }
+        stage('Build web') {
+            steps {
+                withEnv(["EXPO_PUBLIC_API_URL=${params.PUBLIC_API_ORIGIN}", "BAOTIN_ANDROID_DOWNLOAD_DIR=${params.ANDROID_DOWNLOAD_ID ? '/var/jenkins_home/android-releases/' + params.ANDROID_DOWNLOAD_ID : ''}"]) { sh 'sh ci/build-web.sh' }
+            }
+        }
+        stage('Archive primary web artifact') {
+            steps { archiveArtifacts artifacts: 'build/web.tar.gz', allowEmptyArchive: false, fingerprint: true }
+        }
+        stage('Alternative Docker image') {
+            when { expression { params.BUILD_DOCKER_IMAGE } }
+            steps {
+                withEnv(["EXPO_PUBLIC_API_URL=${params.PUBLIC_API_ORIGIN}"]) { sh 'docker build --build-arg EXPO_PUBLIC_API_URL -t "${IMAGE}:${REVISION}" .' }
+                sh 'IMAGE_REFERENCE="${IMAGE}:${REVISION}" sh ci/security-gates.sh'
+                withCredentials([usernamePassword(credentialsId: 'ghcr-registry', usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                    sh '''set -eu
+                        set +x
+                        printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
+                        trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+                        docker push "${IMAGE}:${REVISION}"
+                        docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}:${REVISION}" > build/image-digest.txt
+                    '''
+                }
+                archiveArtifacts artifacts: 'build/image-digest.txt', fingerprint: true
+            }
+            post { always { archiveArtifacts artifacts: 'build/security/*.json', allowEmptyArchive: false } }
+        }
+    }
+}

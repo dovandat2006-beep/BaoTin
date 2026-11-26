@@ -1,0 +1,726 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-04T19:26:34.7841885Z",
+  "title": "Design System: BaoTin",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Civic Paper",
+        "canonical": "#fcfdfc",
+        "tonalRamp": [
+          "oklch(15% 0.201 6.5)",
+          "oklch(27% 0.201 6.5)",
+          "oklch(39% 0.201 6.5)",
+          "oklch(51% 0.201 6.5)",
+          "oklch(63% 0.201 6.5)",
+          "oklch(75% 0.201 6.5)",
+          "oklch(87% 0.201 6.5)",
+          "oklch(95% 0.201 6.5)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Working Sheet",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.203 6.5)",
+          "oklch(27% 0.203 6.5)",
+          "oklch(39% 0.203 6.5)",
+          "oklch(51% 0.203 6.5)",
+          "oklch(63% 0.203 6.5)",
+          "oklch(75% 0.203 6.5)",
+          "oklch(87% 0.203 6.5)",
+          "oklch(95% 0.203 6.5)"
+        ]
+      },
+      "rail": {
+        "role": "neutral",
+        "displayName": "Quiet Rail",
+        "canonical": "#f5f8f6",
+        "tonalRamp": [
+          "oklch(15% 0.197 6.5)",
+          "oklch(27% 0.197 6.5)",
+          "oklch(39% 0.197 6.5)",
+          "oklch(51% 0.197 6.5)",
+          "oklch(63% 0.197 6.5)",
+          "oklch(75% 0.197 6.5)",
+          "oklch(87% 0.197 6.5)",
+          "oklch(95% 0.197 6.5)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Civic Ink",
+        "canonical": "#1b2926",
+        "tonalRamp": [
+          "oklch(15% 0.050 4.6)",
+          "oklch(27% 0.050 4.6)",
+          "oklch(39% 0.050 4.6)",
+          "oklch(51% 0.050 4.6)",
+          "oklch(63% 0.050 4.6)",
+          "oklch(75% 0.050 4.6)",
+          "oklch(87% 0.050 4.6)",
+          "oklch(95% 0.050 4.6)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Field Note",
+        "canonical": "#52615c",
+        "tonalRamp": [
+          "oklch(15% 0.094 5.7)",
+          "oklch(27% 0.094 5.7)",
+          "oklch(39% 0.094 5.7)",
+          "oklch(51% 0.094 5.7)",
+          "oklch(63% 0.094 5.7)",
+          "oklch(75% 0.094 5.7)",
+          "oklch(87% 0.094 5.7)",
+          "oklch(95% 0.094 5.7)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Rule Line",
+        "canonical": "#dce5df",
+        "tonalRamp": [
+          "oklch(15% 0.184 6.4)",
+          "oklch(27% 0.184 6.4)",
+          "oklch(39% 0.184 6.4)",
+          "oklch(51% 0.184 6.4)",
+          "oklch(63% 0.184 6.4)",
+          "oklch(75% 0.184 6.4)",
+          "oklch(87% 0.184 6.4)",
+          "oklch(95% 0.184 6.4)"
+        ]
+      },
+      "pine": {
+        "role": "primary",
+        "displayName": "BaoTin Pine",
+        "canonical": "#216257",
+        "tonalRamp": [
+          "oklch(15% 0.079 2.4)",
+          "oklch(27% 0.079 2.4)",
+          "oklch(39% 0.079 2.4)",
+          "oklch(51% 0.079 2.4)",
+          "oklch(63% 0.079 2.4)",
+          "oklch(75% 0.079 2.4)",
+          "oklch(87% 0.079 2.4)",
+          "oklch(95% 0.079 2.4)"
+        ]
+      },
+      "pine-strong": {
+        "role": "primary",
+        "displayName": "Deep Pine",
+        "canonical": "#174b42",
+        "tonalRamp": [
+          "oklch(15% 0.066 2.4)",
+          "oklch(27% 0.066 2.4)",
+          "oklch(39% 0.066 2.4)",
+          "oklch(51% 0.066 2.4)",
+          "oklch(63% 0.066 2.4)",
+          "oklch(75% 0.066 2.4)",
+          "oklch(87% 0.066 2.4)",
+          "oklch(95% 0.066 2.4)"
+        ]
+      },
+      "pine-soft": {
+        "role": "primary",
+        "displayName": "Pine Wash",
+        "canonical": "#edf4f0",
+        "tonalRamp": [
+          "oklch(15% 0.194 6.4)",
+          "oklch(27% 0.194 6.4)",
+          "oklch(39% 0.194 6.4)",
+          "oklch(51% 0.194 6.4)",
+          "oklch(63% 0.194 6.4)",
+          "oklch(75% 0.194 6.4)",
+          "oklch(87% 0.194 6.4)",
+          "oklch(95% 0.194 6.4)"
+        ]
+      },
+      "placeholder": {
+        "role": "neutral",
+        "displayName": "Placeholder Ink",
+        "canonical": "#65736b",
+        "tonalRamp": [
+          "oklch(15% 0.108 6.3)",
+          "oklch(27% 0.108 6.3)",
+          "oklch(39% 0.108 6.3)",
+          "oklch(51% 0.108 6.3)",
+          "oklch(63% 0.108 6.3)",
+          "oklch(75% 0.108 6.3)",
+          "oklch(87% 0.108 6.3)",
+          "oklch(95% 0.108 6.3)"
+        ]
+      },
+      "safe": {
+        "role": "semantic",
+        "displayName": "Verified Green",
+        "canonical": "#2c6b45",
+        "tonalRamp": [
+          "oklch(15% 0.090 6.9)",
+          "oklch(27% 0.090 6.9)",
+          "oklch(39% 0.090 6.9)",
+          "oklch(51% 0.090 6.9)",
+          "oklch(63% 0.090 6.9)",
+          "oklch(75% 0.090 6.9)",
+          "oklch(87% 0.090 6.9)",
+          "oklch(95% 0.090 6.9)"
+        ]
+      },
+      "safe-soft": {
+        "role": "semantic",
+        "displayName": "Verified Wash",
+        "canonical": "#edf6ee",
+        "tonalRamp": [
+          "oklch(15% 0.195 6.6)",
+          "oklch(27% 0.195 6.6)",
+          "oklch(39% 0.195 6.6)",
+          "oklch(51% 0.195 6.6)",
+          "oklch(63% 0.195 6.6)",
+          "oklch(75% 0.195 6.6)",
+          "oklch(87% 0.195 6.6)",
+          "oklch(95% 0.195 6.6)"
+        ]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Caution Amber",
+        "canonical": "#8a560f",
+        "tonalRamp": [
+          "oklch(15% 0.133 15.9)",
+          "oklch(27% 0.133 15.9)",
+          "oklch(39% 0.133 15.9)",
+          "oklch(51% 0.133 15.9)",
+          "oklch(63% 0.133 15.9)",
+          "oklch(75% 0.133 15.9)",
+          "oklch(87% 0.133 15.9)",
+          "oklch(95% 0.133 15.9)"
+        ]
+      },
+      "warning-soft": {
+        "role": "semantic",
+        "displayName": "Caution Wash",
+        "canonical": "#fff4de",
+        "tonalRamp": [
+          "oklch(15% 0.204 8.2)",
+          "oklch(27% 0.204 8.2)",
+          "oklch(39% 0.204 8.2)",
+          "oklch(51% 0.204 8.2)",
+          "oklch(63% 0.204 8.2)",
+          "oklch(75% 0.204 8.2)",
+          "oklch(87% 0.204 8.2)",
+          "oklch(95% 0.204 8.2)"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Report Red",
+        "canonical": "#b23d3d",
+        "tonalRamp": [
+          "oklch(15% 0.149 15.6)",
+          "oklch(27% 0.149 15.6)",
+          "oklch(39% 0.149 15.6)",
+          "oklch(51% 0.149 15.6)",
+          "oklch(63% 0.149 15.6)",
+          "oklch(75% 0.149 15.6)",
+          "oklch(87% 0.149 15.6)",
+          "oklch(95% 0.149 15.6)"
+        ]
+      },
+      "danger-soft": {
+        "role": "semantic",
+        "displayName": "Report Wash",
+        "canonical": "#fff0ed",
+        "tonalRamp": [
+          "oklch(15% 0.200 7.3)",
+          "oklch(27% 0.200 7.3)",
+          "oklch(39% 0.200 7.3)",
+          "oklch(51% 0.200 7.3)",
+          "oklch(63% 0.200 7.3)",
+          "oklch(75% 0.200 7.3)",
+          "oklch(87% 0.200 7.3)",
+          "oklch(95% 0.200 7.3)"
+        ]
+      },
+      "control": {
+        "role": "neutral",
+        "displayName": "Control Edge",
+        "canonical": "#7d8b83",
+        "tonalRamp": [
+          "oklch(15% 0.124 6.3)",
+          "oklch(27% 0.124 6.3)",
+          "oklch(39% 0.124 6.3)",
+          "oklch(51% 0.124 6.3)",
+          "oklch(63% 0.124 6.3)",
+          "oklch(75% 0.124 6.3)",
+          "oklch(87% 0.124 6.3)",
+          "oklch(95% 0.124 6.3)"
+        ]
+      },
+      "on-primary": {
+        "role": "neutral",
+        "displayName": "On Pine",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.203 6.5)",
+          "oklch(27% 0.203 6.5)",
+          "oklch(39% 0.203 6.5)",
+          "oklch(51% 0.203 6.5)",
+          "oklch(63% 0.203 6.5)",
+          "oklch(75% 0.203 6.5)",
+          "oklch(87% 0.203 6.5)",
+          "oklch(95% 0.203 6.5)"
+        ]
+      },
+      "dark-canvas": {
+        "role": "neutral",
+        "displayName": "Night Civic Paper",
+        "canonical": "#0b1210",
+        "tonalRamp": [
+          "oklch(15% 0.039 5.5)",
+          "oklch(27% 0.039 5.5)",
+          "oklch(39% 0.039 5.5)",
+          "oklch(51% 0.039 5.5)",
+          "oklch(63% 0.039 5.5)",
+          "oklch(75% 0.039 5.5)",
+          "oklch(87% 0.039 5.5)",
+          "oklch(95% 0.039 5.5)"
+        ]
+      },
+      "dark-panel": {
+        "role": "neutral",
+        "displayName": "Night Working Sheet",
+        "canonical": "#111b17",
+        "tonalRamp": [
+          "oklch(15% 0.047 5.8)",
+          "oklch(27% 0.047 5.8)",
+          "oklch(39% 0.047 5.8)",
+          "oklch(51% 0.047 5.8)",
+          "oklch(63% 0.047 5.8)",
+          "oklch(75% 0.047 5.8)",
+          "oklch(87% 0.047 5.8)",
+          "oklch(95% 0.047 5.8)"
+        ]
+      },
+      "dark-rail": {
+        "role": "neutral",
+        "displayName": "Night Quiet Rail",
+        "canonical": "#0e1714",
+        "tonalRamp": [
+          "oklch(15% 0.042 5.9)",
+          "oklch(27% 0.042 5.9)",
+          "oklch(39% 0.042 5.9)",
+          "oklch(51% 0.042 5.9)",
+          "oklch(63% 0.042 5.9)",
+          "oklch(75% 0.042 5.9)",
+          "oklch(87% 0.042 5.9)",
+          "oklch(95% 0.042 5.9)"
+        ]
+      },
+      "dark-ink": {
+        "role": "neutral",
+        "displayName": "Night Civic Ink",
+        "canonical": "#f2f7f4",
+        "tonalRamp": [
+          "oklch(15% 0.194 6.5)",
+          "oklch(27% 0.194 6.5)",
+          "oklch(39% 0.194 6.5)",
+          "oklch(51% 0.194 6.5)",
+          "oklch(63% 0.194 6.5)",
+          "oklch(75% 0.194 6.5)",
+          "oklch(87% 0.194 6.5)",
+          "oklch(95% 0.194 6.5)"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Night Field Note",
+        "canonical": "#a9b9b0",
+        "tonalRamp": [
+          "oklch(15% 0.159 6.4)",
+          "oklch(27% 0.159 6.4)",
+          "oklch(39% 0.159 6.4)",
+          "oklch(51% 0.159 6.4)",
+          "oklch(63% 0.159 6.4)",
+          "oklch(75% 0.159 6.4)",
+          "oklch(87% 0.159 6.4)",
+          "oklch(95% 0.159 6.4)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "Night Rule Line",
+        "canonical": "#2a3a33",
+        "tonalRamp": [
+          "oklch(15% 0.072 6.2)",
+          "oklch(27% 0.072 6.2)",
+          "oklch(39% 0.072 6.2)",
+          "oklch(51% 0.072 6.2)",
+          "oklch(63% 0.072 6.2)",
+          "oklch(75% 0.072 6.2)",
+          "oklch(87% 0.072 6.2)",
+          "oklch(95% 0.072 6.2)"
+        ]
+      },
+      "dark-pine": {
+        "role": "primary",
+        "displayName": "Night BaoTin Pine",
+        "canonical": "#2f8065",
+        "tonalRamp": [
+          "oklch(15% 0.157 5.8)",
+          "oklch(27% 0.157 5.8)",
+          "oklch(39% 0.157 5.8)",
+          "oklch(51% 0.157 5.8)",
+          "oklch(63% 0.157 5.8)",
+          "oklch(75% 0.157 5.8)",
+          "oklch(87% 0.157 5.8)",
+          "oklch(95% 0.157 5.8)"
+        ]
+      },
+      "dark-pine-strong": {
+        "role": "primary",
+        "displayName": "Night Deep Pine",
+        "canonical": "#8fd3b7",
+        "tonalRamp": [
+          "oklch(15% 0.170 5.9)",
+          "oklch(27% 0.170 5.9)",
+          "oklch(39% 0.170 5.9)",
+          "oklch(51% 0.170 5.9)",
+          "oklch(63% 0.170 5.9)",
+          "oklch(75% 0.170 5.9)",
+          "oklch(87% 0.170 5.9)",
+          "oklch(95% 0.170 5.9)"
+        ]
+      },
+      "dark-pine-soft": {
+        "role": "primary",
+        "displayName": "Night Pine Wash",
+        "canonical": "#18372c",
+        "tonalRamp": [
+          "oklch(15% 0.064 5.3)",
+          "oklch(27% 0.064 5.3)",
+          "oklch(39% 0.064 5.3)",
+          "oklch(51% 0.064 5.3)",
+          "oklch(63% 0.064 5.3)",
+          "oklch(75% 0.064 5.3)",
+          "oklch(87% 0.064 5.3)",
+          "oklch(95% 0.064 5.3)"
+        ]
+      },
+      "dark-placeholder": {
+        "role": "neutral",
+        "displayName": "Night Placeholder Ink",
+        "canonical": "#879b90",
+        "tonalRamp": [
+          "oklch(15% 0.143 6.5)",
+          "oklch(27% 0.143 6.5)",
+          "oklch(39% 0.143 6.5)",
+          "oklch(51% 0.143 6.5)",
+          "oklch(63% 0.143 6.5)",
+          "oklch(75% 0.143 6.5)",
+          "oklch(87% 0.143 6.5)",
+          "oklch(95% 0.143 6.5)"
+        ]
+      },
+      "dark-safe": {
+        "role": "semantic",
+        "displayName": "Night Verified Green",
+        "canonical": "#6fc48f",
+        "tonalRamp": [
+          "oklch(15% 0.157 6.8)",
+          "oklch(27% 0.157 6.8)",
+          "oklch(39% 0.157 6.8)",
+          "oklch(51% 0.157 6.8)",
+          "oklch(63% 0.157 6.8)",
+          "oklch(75% 0.157 6.8)",
+          "oklch(87% 0.157 6.8)",
+          "oklch(95% 0.157 6.8)"
+        ]
+      },
+      "dark-safe-soft": {
+        "role": "semantic",
+        "displayName": "Night Verified Wash",
+        "canonical": "#173526",
+        "tonalRamp": [
+          "oklch(15% 0.062 6.2)",
+          "oklch(27% 0.062 6.2)",
+          "oklch(39% 0.062 6.2)",
+          "oklch(51% 0.062 6.2)",
+          "oklch(63% 0.062 6.2)",
+          "oklch(75% 0.062 6.2)",
+          "oklch(87% 0.062 6.2)",
+          "oklch(95% 0.062 6.2)"
+        ]
+      },
+      "dark-warning": {
+        "role": "semantic",
+        "displayName": "Night Caution Amber",
+        "canonical": "#e5b66b",
+        "tonalRamp": [
+          "oklch(15% 0.193 12.4)",
+          "oklch(27% 0.193 12.4)",
+          "oklch(39% 0.193 12.4)",
+          "oklch(51% 0.193 12.4)",
+          "oklch(63% 0.193 12.4)",
+          "oklch(75% 0.193 12.4)",
+          "oklch(87% 0.193 12.4)",
+          "oklch(95% 0.193 12.4)"
+        ]
+      },
+      "dark-warning-soft": {
+        "role": "semantic",
+        "displayName": "Night Caution Wash",
+        "canonical": "#3b2d18",
+        "tonalRamp": [
+          "oklch(15% 0.073 11.6)",
+          "oklch(27% 0.073 11.6)",
+          "oklch(39% 0.073 11.6)",
+          "oklch(51% 0.073 11.6)",
+          "oklch(63% 0.073 11.6)",
+          "oklch(75% 0.073 11.6)",
+          "oklch(87% 0.073 11.6)",
+          "oklch(95% 0.073 11.6)"
+        ]
+      },
+      "dark-danger": {
+        "role": "semantic",
+        "displayName": "Night Report Red",
+        "canonical": "#f08b82",
+        "tonalRamp": [
+          "oklch(15% 0.186 11.1)",
+          "oklch(27% 0.186 11.1)",
+          "oklch(39% 0.186 11.1)",
+          "oklch(51% 0.186 11.1)",
+          "oklch(63% 0.186 11.1)",
+          "oklch(75% 0.186 11.1)",
+          "oklch(87% 0.186 11.1)",
+          "oklch(95% 0.186 11.1)"
+        ]
+      },
+      "dark-danger-soft": {
+        "role": "semantic",
+        "displayName": "Night Report Wash",
+        "canonical": "#432521",
+        "tonalRamp": [
+          "oklch(15% 0.074 11.5)",
+          "oklch(27% 0.074 11.5)",
+          "oklch(39% 0.074 11.5)",
+          "oklch(51% 0.074 11.5)",
+          "oklch(63% 0.074 11.5)",
+          "oklch(75% 0.074 11.5)",
+          "oklch(87% 0.074 11.5)",
+          "oklch(95% 0.074 11.5)"
+        ]
+      },
+      "dark-control": {
+        "role": "neutral",
+        "displayName": "Night Control Edge",
+        "canonical": "#5a7167",
+        "tonalRamp": [
+          "oklch(15% 0.122 6.4)",
+          "oklch(27% 0.122 6.4)",
+          "oklch(39% 0.122 6.4)",
+          "oklch(51% 0.122 6.4)",
+          "oklch(63% 0.122 6.4)",
+          "oklch(75% 0.122 6.4)",
+          "oklch(87% 0.122 6.4)",
+          "oklch(95% 0.122 6.4)"
+        ]
+      },
+      "dark-on-primary": {
+        "role": "neutral",
+        "displayName": "Night On Pine",
+        "canonical": "#0b1210",
+        "tonalRamp": [
+          "oklch(15% 0.039 5.5)",
+          "oklch(27% 0.039 5.5)",
+          "oklch(39% 0.039 5.5)",
+          "oklch(51% 0.039 5.5)",
+          "oklch(63% 0.039 5.5)",
+          "oklch(75% 0.039 5.5)",
+          "oklch(87% 0.039 5.5)",
+          "oklch(95% 0.039 5.5)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Civic Display",
+        "purpose": "Screen titles and decisive result headlines."
+      },
+      "title": {
+        "displayName": "Editorial Title",
+        "purpose": "Sheet, card, result, and empty-state titles."
+      },
+      "body": {
+        "displayName": "Working Copy",
+        "purpose": "Explanations and introductory prose."
+      },
+      "control": {
+        "displayName": "Control Text",
+        "purpose": "Buttons, fields, rows, and navigation."
+      },
+      "label": {
+        "displayName": "Compact Label",
+        "purpose": "Field labels, tabs, metadata, and helper text."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "state-standard",
+        "value": "150ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Color, border, and opacity feedback without bounce or scale."
+      },
+      {
+        "name": "rail-resize",
+        "value": "180ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Desktop navigation rail collapse and expansion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Near-instant transition duration when reduced motion is requested."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sheet-compact",
+        "value": "640px"
+      },
+      {
+        "name": "navigation-compact",
+        "value": "720px"
+      },
+      {
+        "name": "scan-two-column",
+        "value": "1080px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single strongest action in a work region.",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9.5 3a6.5 6.5 0 1 0 3.98 11.64L19.85 21 21 19.85l-6.36-6.37A6.5 6.5 0 0 0 9.5 3Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z\"/></svg>Kiểm tra ngay</button>",
+      "css": ".ds-btn{min-height:48px;padding:0 16px;border-radius:10px;border:0;font:500 14px/1.5 \"Roboto\",sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1),opacity 150ms cubic-bezier(.16,1,.3,1)}.ds-btn svg{width:14px;height:14px;fill:currentColor}.ds-btn-primary{background:var(--color-accent,#216257);color:var(--color-accent-ink,#fff)}.ds-btn-primary:hover{opacity:.9}.ds-btn-primary:active{opacity:.8}.ds-btn-primary:focus-visible{outline:2px solid var(--color-focus,#216257);outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A lower-priority action on a quiet pine wash.",
+      "html": "<button class=\"ds-btn-secondary\">Theo dõi</button>",
+      "css": ".ds-btn-secondary{min-height:48px;padding:0 16px;border:0;border-radius:10px;background:#edf4f0;color:#174b42;font:500 14px/1.5 \"Roboto\",sans-serif;cursor:pointer;transition:opacity 150ms cubic-bezier(.16,1,.3,1)}.ds-btn-secondary:hover{opacity:.9}.ds-btn-secondary:active{opacity:.8}.ds-btn-secondary:focus-visible{outline:2px solid var(--color-focus,#216257);outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "A bounded secondary action that stays quiet beside the primary.",
+      "html": "<button class=\"ds-btn-outline\">Xem lịch sử <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m13.2 5.6 5.4 5.4H3v2h15.6l-5.4 5.4 1.4 1.4L22.4 12l-7.8-7.8-1.4 1.4Z\"/></svg></button>",
+      "css": ".ds-btn-outline{min-height:48px;padding:0 16px;border:1px solid #7d8b83;border-radius:10px;background:var(--color-canvas,#fff);color:var(--color-ink,#1b2926);font:500 14px/1.5 \"Roboto\",sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:border-color 150ms cubic-bezier(.16,1,.3,1),opacity 150ms cubic-bezier(.16,1,.3,1)}.ds-btn-outline svg{width:13px;height:13px;fill:currentColor}.ds-btn-outline:hover{border-color:var(--color-accent,#216257)}.ds-btn-outline:active{opacity:.8}.ds-btn-outline:focus-visible{outline:2px solid var(--color-focus,#216257);outline-offset:2px}"
+    },
+    {
+      "name": "Target Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The 48px field used for suspicious URLs, numbers, and account identifiers.",
+      "html": "<label class=\"ds-field\"><span>Đường dẫn cần kiểm tra</span><input value=\"https://quatang-vip-free-gift.site/xac-minh\" /><small>BaoTin đối chiếu nhiều nguồn để đưa ra mức rủi ro.</small></label>",
+      "css": ".ds-field{display:grid;gap:8px;color:var(--color-ink,#1b2926);font:500 12px/1.67 \"Roboto\",sans-serif}.ds-field input{height:48px;padding:0 12px;border:1px solid #7d8b83;border-radius:10px;background:var(--color-canvas,#fff);color:var(--color-ink,#1b2926);font:400 14px/1.5 \"Roboto\",sans-serif;transition:border-color 150ms cubic-bezier(.16,1,.3,1)}.ds-field input:hover{border-color:var(--color-accent,#216257)}.ds-field input:focus-visible{outline:2px solid #edf4f0;outline-offset:0;border-color:var(--color-accent,#216257)}.ds-field small{color:#52615c;font-weight:400}"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "description": "A ruled rail destination with a thin pine active edge.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 2 3 6v6c0 5.25 3.84 9.74 9 11 5.16-1.26 9-5.75 9-11V6l-9-4Z\"/></svg>Kiểm tra</a><a class=\"ds-nav-item\" href=\"#\">Tra cứu</a></nav>",
+      "css": ".ds-nav{display:grid;gap:4px;background:#f5f8f6;padding:12px}.ds-nav-item{min-height:48px;padding:0 12px;border-left:1px solid transparent;color:#52615c;text-decoration:none;font:500 14px/1.5 \"Roboto\",sans-serif;display:flex;align-items:center;gap:12px;transition:background-color 150ms cubic-bezier(.16,1,.3,1)}.ds-nav-item svg{width:16px;height:16px;fill:currentColor}.ds-nav-item:hover{background:#fff}.ds-nav-item:focus-visible{outline:2px solid var(--color-focus,#216257);outline-offset:-2px}.ds-nav-active{border-left-color:var(--color-accent,#216257);background:#edf4f0;color:#174b42}"
+    },
+    {
+      "name": "Risk Badge",
+      "kind": "chip",
+      "refersTo": "badge-status",
+      "description": "A compact semantic label reserved for risk and report status.",
+      "html": "<span class=\"ds-risk-badge\">Thấp</span>",
+      "css": ".ds-risk-badge{display:inline-flex;padding:4px 10px;border-radius:9999px;background:#edf6ee;color:#2c6b45;font:500 11px/1.5 \"Roboto\",sans-serif}.ds-risk-badge:hover{filter:brightness(.98)}.ds-risk-badge:focus-visible{outline:2px solid var(--color-focus,#216257);outline-offset:2px}"
+    },
+    {
+      "name": "Outlined Card",
+      "kind": "card",
+      "refersTo": "card-outlined",
+      "description": "A contained surface used only when an open ruled region is insufficient.",
+      "html": "<section class=\"ds-card\"><h3>Kết quả kiểm tra</h3><p>BaoTin chỉ hiển thị những tín hiệu có ý nghĩa và một hành động rõ ràng.</p></section>",
+      "css": ".ds-card{padding:20px;border:1px solid var(--color-line,#dce5df);border-radius:14px;background:var(--color-canvas,#fff);color:var(--color-ink,#1b2926)}.ds-card h3{margin:0;font:600 20px/1.4 Roboto,Georgia,serif}.ds-card p{margin:8px 0 0;color:#52615c;font:400 14px/1.7 \"Roboto\",sans-serif}.ds-card:hover{border-color:#7d8b83}.ds-card:focus-within{outline:2px solid var(--color-focus,#216257);outline-offset:2px}"
+    },
+    {
+      "name": "Trailing Sheet",
+      "kind": "custom",
+      "description": "The desktop modal pattern: a flat trailing panel separated by one rule.",
+      "html": "<aside class=\"ds-sheet\"><header><div><h3>Thông báo</h3><p>Những thay đổi quan trọng từ BaoTin.</p></div><button aria-label=\"Đóng\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6 6.4 5Z\"/></svg></button></header><div class=\"ds-sheet-body\">Không có thông báo mới.</div></aside>",
+      "css": ".ds-sheet{width:440px;max-width:100%;border-left:1px solid var(--color-line,#dce5df);background:var(--color-canvas,#fff);color:var(--color-ink,#1b2926);font-family:\"Roboto\",sans-serif}.ds-sheet header{display:flex;justify-content:space-between;gap:16px;padding:16px 20px;border-bottom:1px solid var(--color-line,#dce5df)}.ds-sheet h3{margin:0;font:600 20px/1.4 Roboto,Georgia,serif}.ds-sheet p{margin:4px 0 0;color:#52615c;font-size:12px}.ds-sheet button{width:48px;height:48px;border:0;border-radius:10px;background:transparent;color:inherit;font-size:22px;cursor:pointer}.ds-sheet button svg{width:18px;height:18px;fill:currentColor}.ds-sheet button:hover{background:#edf4f0}.ds-sheet button:focus-visible{outline:2px solid var(--color-focus,#216257);outline-offset:2px}.ds-sheet-body{padding:20px;color:#52615c;font-size:14px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Civic Workbench",
+    "overview": "BaoTin is a calm civic-security workbench for people acting under uncertainty. Editorial hierarchy, open working space, ruled rows, and a restrained pine accent make the interface feel trustworthy and direct rather than promotional or alarmist.`n`nThe system opens directly on the checking task: choose a content type, enter the content, run the check, and receive a plain-language finding with its type and recommended caution. The scan surface does not use slogans, marketing headlines, invented claims, or technical scores that obscure the answer.",
+    "keyCharacteristics": [
+      "Editorial Roboto headlines over pragmatic Roboto controls and copy.",
+      "Paper, ink, and BaoTin pine form the core visual world in light and dark themes.",
+      "Borders and tonal surfaces establish structure; whitespace keeps the workbench calm.",
+      "Risk colors carry meaning only, and every result pairs status with explanation and action.",
+      "Desktop uses an asymmetric work area; compact screens put the checking task first."
+    ],
+    "rules": [
+      {
+        "name": "The One Pine Rule",
+        "body": "Pine is the only general-purpose accent; risk colors never decorate navigation or ordinary controls.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Risk Rule",
+        "body": "Safe, warning, and danger colors appear only when the interface communicates a corresponding outcome, alert, or destructive action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Upright Authority Rule",
+        "body": "Display headings stay upright and sentence-cased; do not use italics, all caps, or artificial letter spacing for gravitas.",
+        "section": "typography"
+      },
+      {
+        "name": "The Open Workbench Rule",
+        "body": "Prefer one clear working plane with ruled sections; do not turn every group into a floating card.",
+        "section": "layout"
+      },
+      {
+        "name": "The Structural Depth Rule",
+        "body": "Use tone and borders for persistent hierarchy; reserve overlays and sheet movement for actual modality.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Functional Radius Rule",
+        "body": "Radius identifies a control, container, sheet, or status chip; it is never added merely to soften the page.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do lead every screen with the primary task, explanation, or status the user needs next.",
+      "Do use borders, open rows, and whitespace to group related information.",
+      "Do pair every risk color and score with plain-language evidence and a recommended action.",
+      "Do keep Font Awesome as the only application icon system and align icons with text baselines.",
+      "Do preserve semantic light/dark roles, visible focus, reduced motion, and platform safe areas.",
+      "Use literal functional copy on the scan screen: Nhập tin nhắn, Kiểm tra ngay, Phát hiện … có dấu hiệu lừa đảo, and Loại: …."
+    ],
+    "donts": [
+      "Don't use gradients, glass effects, decorative shadows, arbitrary accent colors, or security-themed ornament.",
+      "Don't nest cards inside cards or round ordinary list rows into disconnected bubbles.",
+      "Don't use safe, warning, or danger colors for decoration or ordinary navigation.",
+      "Don't bounce or scale buttons on hover or press.",
+      "Don't use Unicode glyphs or emoji as interface icons.",
+      "Do not place a slogan or promotional sentence above the primary scan input."
+    ]
+  }
+}

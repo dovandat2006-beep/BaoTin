@@ -1,0 +1,77 @@
+// Trusted Jenkins service pipeline. Never deploys or exposes runtime secrets.
+pipeline {
+    agent { label 'baotin-docker' }
+    options { timestamps(); disableConcurrentBuilds(); timeout(time: 60, unit: 'MINUTES'); buildDiscarder(logRotator(numToKeepStr: '20')) }
+    parameters { booleanParam(name: 'BUILD_DOCKER_IMAGE', defaultValue: false, description: 'Alternative Docker image build/push; primary deployment uses JAR artifacts') }
+    environment { SERVICE = 'search-service'; IMAGE = 'ghcr.io/vietluccuu/search-service' }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.REVISION = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.ON_MAIN = sh(script: 'test "$(git rev-parse HEAD)" = "$(git rev-parse refs/remotes/origin/main)"', returnStatus: true) == 0 && !env.CHANGE_ID ? 'true' : 'false'
+                    if (env.ON_MAIN != 'true') { error('Privileged Jenkins controller/dind lane accepts approved main commits only; PR verification runs on ephemeral GitHub runners') }
+                }
+            }
+        }
+        stage('Build daemon preflight') {
+            steps { sh '''set -eu
+                before=$(docker info --format '{{.ID}}')
+                sleep 3
+                test "$before" = "$(docker info --format '{{.ID}}')"
+                docker info >/dev/null
+            ''' }
+        }
+        // Test (unit + integration) chạy trên máy dev và ở lane GitHub Verify
+        // (`.github/workflows/ci-cd.yml`); lane release chỉ build artifact rồi
+        // siết quality gate nên không chạy lại test.
+        stage('SonarQube quality gate') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh 'sh ci/sonar-quality-gate.sh'
+                }
+            }
+            post { always { archiveArtifacts artifacts: 'build/sonar/**', allowEmptyArchive: true, fingerprint: true } }
+        }
+        stage('Build release artifact') {
+            steps { sh '''set -eu
+                ./gradlew --no-daemon bootJar --max-workers=1 --console=plain
+                jar=$(find build/libs -maxdepth 1 -name '*-SNAPSHOT.jar' ! -name '*-plain.jar')
+                test "$(printf '%s\\n' "$jar" | wc -l | tr -d ' ')" = 1
+                hash=$(sha256sum "$jar" | cut -d ' ' -f 1)
+                printf '{"schemaVersion":1,"service":"%s","sourceRevision":"%s","testPolicy":"external_verify","jarSha256":"%s"}\\n' "$SERVICE" "$REVISION" "$hash" > build/release-evidence.json
+            ''' }
+            post { success { archiveArtifacts artifacts: 'build/libs/*-SNAPSHOT.jar,build/release-evidence.json', allowEmptyArchive: false, fingerprint: true } }
+        }
+        stage('JAR security and SBOM gates') {
+            steps { sh 'sh ci/jar-security-gates.sh' }
+            post { always { archiveArtifacts artifacts: 'build/security/*.json', allowEmptyArchive: false, fingerprint: true } }
+        }
+        stage('Alternative Docker image gates') {
+            when { expression { params.BUILD_DOCKER_IMAGE } }
+            steps { sh '''set -eu
+                docker build -t "${IMAGE}:${REVISION}" .
+                IMAGE_REFERENCE="${IMAGE}:${REVISION}" sh ci/security-gates.sh
+            ''' }
+            post { always { archiveArtifacts artifacts: 'build/security/**', allowEmptyArchive: true, fingerprint: true } }
+        }
+        stage('Publish trusted-main digest') {
+            when { expression { env.ON_MAIN == 'true' && params.BUILD_DOCKER_IMAGE } }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'ghcr-registry', usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                    sh '''set -eu
+                        set +x
+                        printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
+                        trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+                        docker push "${IMAGE}:${REVISION}"
+                        ref=$(docker inspect --format '{{index .RepoDigests 0}}' "${IMAGE}:${REVISION}")
+                        case "$ref" in "${IMAGE}"@sha256:*) ;; *) exit 2;; esac
+                        printf '{"service":"%s","image":"%s","revision":"%s"}\n' "$SERVICE" "$ref" "$REVISION" > build/release-fragment.json
+                    '''
+                }
+                archiveArtifacts artifacts: 'build/release-fragment.json', fingerprint: true
+            }
+        }
+    }
+}

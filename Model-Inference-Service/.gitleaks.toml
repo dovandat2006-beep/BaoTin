@@ -1,0 +1,14 @@
+title = "BaoTin Model-Inference-Service secret-scan policy"
+
+[extend]
+useDefault = true
+
+# The ONNX fixture manifests map artifact file names to plain SHA-256 hashes used
+# for integrity checks of test data. They are not credentials, but the hashes trip
+# the generic-api-key rule. Keep the exception to these two files only.
+[[allowlists]]
+description = "ONNX fixture artifact checksum manifests"
+paths = [
+  '''src/test/resources/fixtures/text/sha256\.json$''',
+  '''src/test/resources/fixtures/url/sha256\.json$''',
+]

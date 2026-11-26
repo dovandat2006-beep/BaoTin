@@ -1,0 +1,13 @@
+{
+  "added_tokens.json": "c326da4e0b47de113f3f27fb19942a6a9f2f49f9008407ec8fbe718d5645323e",
+  "bpe.codes": "5d0c82b86761e1a1b34caf7ec1889f39e2d12f5e7a534dfce519d4c13b93dbd2",
+  "labels.json": "6bceebba5223982a35300d201d58a15212feb618bec2e54ae74ef2a06e6ded21",
+  "metadata.json": "2438b0f5bd9c76a89abd0646bb836f3ac87632e255bfec85b6e32547992dca5b",
+  "model.onnx": "c350e183049f7c2be25d6547a5b70201fc5a039a2cc879a379966a807c4bba84",
+  "parity.json": "18eab27e0839247996f49dfbf6647c74f2d942b714ba3fca99cbecf5ebc2ea89",
+  "preprocessing.json": "1075bfc240fec859e6b6b2d3e2aa6525b2f319b01edecd4cb540366a27c5bcd1",
+  "special_tokens_map.json": "38d989b0fdad0fec0c67c14b1f3c8b68184022cf6d4adc5444526ced8653f738",
+  "tokenizer-spec.json": "0a7d27513cb3359cf96407e8e46c26df8a6353dcf1ea3565885e417e68e652a6",
+  "tokenizer_config.json": "377c251396a821b371b86b4a59526fea6b42539ea3fa6e843b3cf044fad6f228",
+  "vocab.txt": "bb1791254f9d64c97b75292be546f50f4aecdbf53c5a7fbaf135cde4f173b673"
+}

@@ -1,0 +1,173 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BaoTin Threat target identity internal contract",
+    "version": "1.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://threat-service:8080"
+    }
+  ],
+  "paths": {
+    "/internal/v1/targets/resolve": {
+      "post": {
+        "operationId": "resolveReportTarget",
+        "summary": "Resolve canonical target identity without fetching submitted URL",
+        "description": "Private network/TLS only; separate Report and Notification service tokens >=32 characters, mounted only on their callers and Threat. URL canonicalization strips fragment/tracking/session query fields. Message stores SHA256 of NFKC lowercase whitespace-normalized content only. No gateway route. URL identity reuses the scan normalizer, preserves query order and percent-encoded reserved characters, and resolves into the same threat.targets row as scanning. Display snapshots are at most 500 characters; the full canonical URL is retained only by Threat. When scanId is provided, reporterUserId is mandatory; Threat checks history ownership, target type and matching URL identity or original text hash. Foreign/deleted scans return 404 without resolving a target; mismatches return 400 and roll back target changes. Both source fields must be absent for manual resolution. Notification uses URL-only manual resolution (no scan/reporter fields) to bind owned watchlist rows to authoritative Threat IDs. The service credential stays private; no public request may supply a target ID or caller identity. Notification has a distinct credential and is forbidden from resolving message templates or supplying scanId/reporterUserId. Existing Report credentials and payloads are unchanged.",
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TargetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Target"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid service credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source scan is absent, deleted or belongs to another reporter."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "serviceToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Service-Token"
+      }
+    },
+    "schemas": {
+      "TargetRequest": {
+        "type": "object",
+        "required": [
+          "type",
+          "value"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "URL",
+              "MESSAGE_TEMPLATE"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "scanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reporterUserId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Verified Report JWT subject; required together with scanId."
+          }
+        },
+        "dependentRequired": {
+          "scanId": [
+            "reporterUserId"
+          ],
+          "reporterUserId": [
+            "scanId"
+          ]
+        }
+      },
+      "Target": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "displayValue"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "URL",
+              "MESSAGE_TEMPLATE"
+            ]
+          },
+          "displayValue": {
+            "type": "string"
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "required": [
+          "title",
+          "status",
+          "code"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    }
+  }
+}
